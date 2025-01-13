@@ -1,0 +1,17 @@
+name: MCDC Analysis
+
+on:
+  push:
+  pull_request:
+
+# Force bash to apply pipefail option so pipeline failures aren't masked
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  mcdc:
+    name: MCDC    
+    uses: arielswalker/cFS/.github/workflows/mcdc-reusable.yml@test-mcdc
+    with:
+      app-name: 'cs'
