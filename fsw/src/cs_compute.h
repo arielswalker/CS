@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -30,7 +29,7 @@
  **
  **************************************************************************/
 #include "cfe.h"
-#include "cs_tbldefs.h"
+#include "cs_tbl.h"
 
 /**
  * \brief Computes checksums on EEPROM or Memory types

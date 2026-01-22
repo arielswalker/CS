@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -28,14 +27,18 @@
 
 /*
  * ----------------------------------------------------
- * Generated stub function for CS_BackgroundCheckCycle()
+ * Generated stub function for CS_BackgroundCheckCycleCmd()
  * ----------------------------------------------------
  */
-void CS_BackgroundCheckCycle(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_BackgroundCheckCycleCmd(const CS_BackgroundCheckCycleCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_BackgroundCheckCycle, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_BackgroundCheckCycleCmd, CFE_Status_t);
 
-    UT_GenStub_Execute(CS_BackgroundCheckCycle, Basic, NULL);
+    UT_GenStub_AddParam(CS_BackgroundCheckCycleCmd, const CS_BackgroundCheckCycleCmd_t *, CmdPtr);
+
+    UT_GenStub_Execute(CS_BackgroundCheckCycleCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_BackgroundCheckCycleCmd, CFE_Status_t);
 }
 
 /*
@@ -43,11 +46,15 @@ void CS_BackgroundCheckCycle(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_CancelOneShotCmd()
  * ----------------------------------------------------
  */
-void CS_CancelOneShotCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_CancelOneShotCmd(const CS_CancelOneShotCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_CancelOneShotCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_CancelOneShotCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_CancelOneShotCmd, const CS_CancelOneShotCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_CancelOneShotCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_CancelOneShotCmd, CFE_Status_t);
 }
 
 /*
@@ -55,11 +62,15 @@ void CS_CancelOneShotCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_DisableAllCSCmd()
  * ----------------------------------------------------
  */
-void CS_DisableAllCSCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_DisableAllCSCmd(const CS_DisableAllCSCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_DisableAllCSCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_DisableAllCSCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_DisableAllCSCmd, const CS_DisableAllCSCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_DisableAllCSCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_DisableAllCSCmd, CFE_Status_t);
 }
 
 /*
@@ -67,11 +78,15 @@ void CS_DisableAllCSCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_DisableCfeCoreCmd()
  * ----------------------------------------------------
  */
-void CS_DisableCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_DisableCfeCoreCmd(const CS_DisableCfeCoreCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_DisableCfeCoreCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_DisableCfeCoreCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_DisableCfeCoreCmd, const CS_DisableCfeCoreCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_DisableCfeCoreCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_DisableCfeCoreCmd, CFE_Status_t);
 }
 
 /*
@@ -79,11 +94,15 @@ void CS_DisableCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_DisableOSCmd()
  * ----------------------------------------------------
  */
-void CS_DisableOSCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_DisableOSCmd(const CS_DisableOSCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_DisableOSCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_DisableOSCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_DisableOSCmd, const CS_DisableOSCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_DisableOSCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_DisableOSCmd, CFE_Status_t);
 }
 
 /*
@@ -91,11 +110,15 @@ void CS_DisableOSCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_EnableAllCSCmd()
  * ----------------------------------------------------
  */
-void CS_EnableAllCSCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_EnableAllCSCmd(const CS_EnableAllCSCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_EnableAllCSCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_EnableAllCSCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_EnableAllCSCmd, const CS_EnableAllCSCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_EnableAllCSCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_EnableAllCSCmd, CFE_Status_t);
 }
 
 /*
@@ -103,11 +126,15 @@ void CS_EnableAllCSCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_EnableCfeCoreCmd()
  * ----------------------------------------------------
  */
-void CS_EnableCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_EnableCfeCoreCmd(const CS_EnableCfeCoreCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_EnableCfeCoreCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_EnableCfeCoreCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_EnableCfeCoreCmd, const CS_EnableCfeCoreCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_EnableCfeCoreCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_EnableCfeCoreCmd, CFE_Status_t);
 }
 
 /*
@@ -115,11 +142,15 @@ void CS_EnableCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_EnableOSCmd()
  * ----------------------------------------------------
  */
-void CS_EnableOSCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_EnableOSCmd(const CS_EnableOSCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_EnableOSCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_EnableOSCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_EnableOSCmd, const CS_EnableOSCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_EnableOSCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_EnableOSCmd, CFE_Status_t);
 }
 
 /*
@@ -127,11 +158,15 @@ void CS_EnableOSCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_NoopCmd()
  * ----------------------------------------------------
  */
-void CS_NoopCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_NoopCmd(const CS_NoopCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_NoopCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_NoopCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_NoopCmd, const CS_NoopCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_NoopCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_NoopCmd, CFE_Status_t);
 }
 
 /*
@@ -139,11 +174,15 @@ void CS_NoopCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_OneShotCmd()
  * ----------------------------------------------------
  */
-void CS_OneShotCmd(const CS_OneShotCmd_t *CmdPtr)
+CFE_Status_t CS_OneShotCmd(const CS_OneShotCmd_t *CmdPtr)
 {
+    UT_GenStub_SetupReturnBuffer(CS_OneShotCmd, CFE_Status_t);
+
     UT_GenStub_AddParam(CS_OneShotCmd, const CS_OneShotCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_OneShotCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_OneShotCmd, CFE_Status_t);
 }
 
 /*
@@ -151,11 +190,15 @@ void CS_OneShotCmd(const CS_OneShotCmd_t *CmdPtr)
  * Generated stub function for CS_RecomputeBaselineCfeCoreCmd()
  * ----------------------------------------------------
  */
-void CS_RecomputeBaselineCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_RecomputeBaselineCfeCoreCmd(const CS_RecomputeBaselineCfeCoreCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_RecomputeBaselineCfeCoreCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_RecomputeBaselineCfeCoreCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_RecomputeBaselineCfeCoreCmd, const CS_RecomputeBaselineCfeCoreCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_RecomputeBaselineCfeCoreCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_RecomputeBaselineCfeCoreCmd, CFE_Status_t);
 }
 
 /*
@@ -163,11 +206,15 @@ void CS_RecomputeBaselineCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_RecomputeBaselineOSCmd()
  * ----------------------------------------------------
  */
-void CS_RecomputeBaselineOSCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_RecomputeBaselineOSCmd(const CS_RecomputeBaselineOSCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_RecomputeBaselineOSCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_RecomputeBaselineOSCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_RecomputeBaselineOSCmd, const CS_RecomputeBaselineOSCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_RecomputeBaselineOSCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_RecomputeBaselineOSCmd, CFE_Status_t);
 }
 
 /*
@@ -175,11 +222,15 @@ void CS_RecomputeBaselineOSCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_ReportBaselineCfeCoreCmd()
  * ----------------------------------------------------
  */
-void CS_ReportBaselineCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_ReportBaselineCfeCoreCmd(const CS_ReportBaselineCfeCoreCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_ReportBaselineCfeCoreCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_ReportBaselineCfeCoreCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_ReportBaselineCfeCoreCmd, const CS_ReportBaselineCfeCoreCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_ReportBaselineCfeCoreCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_ReportBaselineCfeCoreCmd, CFE_Status_t);
 }
 
 /*
@@ -187,11 +238,15 @@ void CS_ReportBaselineCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_ReportBaselineOSCmd()
  * ----------------------------------------------------
  */
-void CS_ReportBaselineOSCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_ReportBaselineOSCmd(const CS_ReportBaselineOSCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_ReportBaselineOSCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_ReportBaselineOSCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_ReportBaselineOSCmd, const CS_ReportBaselineOSCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_ReportBaselineOSCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_ReportBaselineOSCmd, CFE_Status_t);
 }
 
 /*
@@ -199,9 +254,29 @@ void CS_ReportBaselineOSCmd(const CS_NoArgsCmd_t *CmdPtr)
  * Generated stub function for CS_ResetCmd()
  * ----------------------------------------------------
  */
-void CS_ResetCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_ResetCmd(const CS_ResetCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_ResetCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_ResetCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_ResetCmd, const CS_ResetCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_ResetCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_ResetCmd, CFE_Status_t);
+}
+
+/*
+ * ----------------------------------------------------
+ * Generated stub function for CS_SendHkCmd()
+ * ----------------------------------------------------
+ */
+CFE_Status_t CS_SendHkCmd(const CS_SendHkCmd_t *CmdPtr)
+{
+    UT_GenStub_SetupReturnBuffer(CS_SendHkCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_SendHkCmd, const CS_SendHkCmd_t *, CmdPtr);
+
+    UT_GenStub_Execute(CS_SendHkCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_SendHkCmd, CFE_Status_t);
 }

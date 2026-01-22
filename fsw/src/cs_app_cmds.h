@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -49,7 +48,7 @@
  *
  *  \sa #CS_DISABLE_APPS_CC
  */
-void CS_DisableAppCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_DisableAppsCmd(const CS_DisableAppsCmd_t *CmdPtr);
 
 /**
  * \brief Process an enable background checking for the App
@@ -68,7 +67,7 @@ void CS_DisableAppCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_ENABLE_APPS_CC
  */
-void CS_EnableAppCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_EnableAppsCmd(const CS_EnableAppsCmd_t *CmdPtr);
 
 /**
  * \brief Process a report baseline of an App command
@@ -84,7 +83,7 @@ void CS_EnableAppCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_REPORT_BASELINE_APP_CC
  */
-void CS_ReportBaselineAppCmd(const CS_AppNameCmd_t *CmdPtr);
+CFE_Status_t CS_ReportBaselineAppCmd(const CS_ReportBaselineAppCmd_t *CmdPtr);
 
 /**
  * \brief Process a recopmute baseline of an app command
@@ -100,7 +99,7 @@ void CS_ReportBaselineAppCmd(const CS_AppNameCmd_t *CmdPtr);
  *
  *  \sa #CS_RECOMPUTE_BASELINE_APP_CC
  */
-void CS_RecomputeBaselineAppCmd(const CS_AppNameCmd_t *CmdPtr);
+CFE_Status_t CS_RecomputeBaselineAppCmd(const CS_RecomputeBaselineAppCmd_t *CmdPtr);
 
 /**
  * \brief Process a disable background checking for an App
@@ -123,7 +122,7 @@ void CS_RecomputeBaselineAppCmd(const CS_AppNameCmd_t *CmdPtr);
  *
  *  \sa #CS_DISABLE_NAME_APP_CC
  */
-void CS_DisableNameAppCmd(const CS_AppNameCmd_t *CmdPtr);
+CFE_Status_t CS_DisableNameAppCmd(const CS_DisableNameAppCmd_t *CmdPtr);
 
 /**
  * \brief Process an enable background checking for an App
@@ -146,6 +145,6 @@ void CS_DisableNameAppCmd(const CS_AppNameCmd_t *CmdPtr);
  *
  *  \sa #CS_ENABLE_NAME_APP_CC
  */
-void CS_EnableNameAppCmd(const CS_AppNameCmd_t *CmdPtr);
+CFE_Status_t CS_EnableNameAppCmd(const CS_EnableNameAppCmd_t *CmdPtr);
 
 #endif

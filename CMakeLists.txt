@@ -13,6 +13,12 @@ set(APP_SRC_FILES
   fsw/src/cs_compute.c
 )
 
+if (CFE_EDS_ENABLED)
+  list(APPEND APP_SRC_FILES fsw/src/cs_eds_dispatch.c)
+else()
+  list(APPEND APP_SRC_FILES fsw/src/cs_dispatch.c)
+endif()
+
 # Create the app module
 add_cfe_app(cs ${APP_SRC_FILES})
 

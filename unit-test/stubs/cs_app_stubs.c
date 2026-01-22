@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -53,22 +52,6 @@ void CS_AppMain(void)
 
 /*
  * ----------------------------------------------------
- * Generated stub function for CS_AppPipe()
- * ----------------------------------------------------
- */
-CFE_Status_t CS_AppPipe(const CFE_SB_Buffer_t *BufPtr)
-{
-    UT_GenStub_SetupReturnBuffer(CS_AppPipe, CFE_Status_t);
-
-    UT_GenStub_AddParam(CS_AppPipe, const CFE_SB_Buffer_t *, BufPtr);
-
-    UT_GenStub_Execute(CS_AppPipe, Basic, NULL);
-
-    return UT_GenStub_GetReturnValue(CS_AppPipe, CFE_Status_t);
-}
-
-/*
- * ----------------------------------------------------
  * Generated stub function for CS_CreateRestoreStatesFromCDS()
  * ----------------------------------------------------
  */
@@ -79,30 +62,6 @@ CFE_Status_t CS_CreateRestoreStatesFromCDS(void)
     UT_GenStub_Execute(CS_CreateRestoreStatesFromCDS, Basic, NULL);
 
     return UT_GenStub_GetReturnValue(CS_CreateRestoreStatesFromCDS, CFE_Status_t);
-}
-
-/*
- * ----------------------------------------------------
- * Generated stub function for CS_HousekeepingCmd()
- * ----------------------------------------------------
- */
-void CS_HousekeepingCmd(const CS_NoArgsCmd_t *CmdPtr)
-{
-    UT_GenStub_AddParam(CS_HousekeepingCmd, const CS_NoArgsCmd_t *, CmdPtr);
-
-    UT_GenStub_Execute(CS_HousekeepingCmd, Basic, NULL);
-}
-
-/*
- * ----------------------------------------------------
- * Generated stub function for CS_ProcessCmd()
- * ----------------------------------------------------
- */
-void CS_ProcessCmd(const CFE_SB_Buffer_t *BufPtr)
-{
-    UT_GenStub_AddParam(CS_ProcessCmd, const CFE_SB_Buffer_t *, BufPtr);
-
-    UT_GenStub_Execute(CS_ProcessCmd, Basic, NULL);
 }
 
 /*

@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -53,5 +52,9 @@ extern CFE_ES_WriteToSysLog_context_t context_CFE_ES_WriteToSysLog;
 
 void CS_Test_Setup(void);
 void CS_Test_TearDown(void);
+
+void CS_Test_ResetEventCheck(void);
+void CS_Test_Setup_SetDefEntryState(CS_ChecksumState_Enum_t OldState);
+void CS_Test_Check_SetDefEntryState(void *EntryPtr, CS_ChecksumState_Enum_t NewState);
 
 #endif

@@ -20,6 +20,7 @@ add_cfe_coverage_stubs("cs_internal"
   stubs/cs_cmds_stubs.c
   stubs/cs_init_stubs.c
   stubs/cs_eeprom_cmds_stubs.c
+  stubs/cs_dispatch_stubs.c
 )
 
 # Link with the cfe core stubs and unit test assert libs

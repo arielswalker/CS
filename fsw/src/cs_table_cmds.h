@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -49,7 +48,7 @@
  *
  *  \sa #CS_DISABLE_TABLES_CC
  */
-void CS_DisableTablesCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_DisableTablesCmd(const CS_DisableTablesCmd_t *CmdPtr);
 
 /**
  * \brief Process an enable background checking for the Tables
@@ -68,7 +67,7 @@ void CS_DisableTablesCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_ENABLE_TABLES_CC
  */
-void CS_EnableTablesCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_EnableTablesCmd(const CS_EnableTablesCmd_t *CmdPtr);
 
 /**
  * \brief Proccess a report baseline of a Table command
@@ -84,7 +83,7 @@ void CS_EnableTablesCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_REPORT_BASELINE_TABLE_CC
  */
-void CS_ReportBaselineTablesCmd(const CS_TableNameCmd_t *CmdPtr);
+CFE_Status_t CS_ReportBaselineTableCmd(const CS_ReportBaselineTableCmd_t *CmdPtr);
 
 /**
  * \brief Process a recompute baseline of a Table command
@@ -100,7 +99,7 @@ void CS_ReportBaselineTablesCmd(const CS_TableNameCmd_t *CmdPtr);
  *
  *  \sa #CS_RECOMPUTE_BASELINE_TABLE_CC
  */
-void CS_RecomputeBaselineTablesCmd(const CS_TableNameCmd_t *CmdPtr);
+CFE_Status_t CS_RecomputeBaselineTableCmd(const CS_RecomputeBaselineTableCmd_t *CmdPtr);
 
 /**
  * \brief Process a disable background checking for a Table
@@ -123,7 +122,7 @@ void CS_RecomputeBaselineTablesCmd(const CS_TableNameCmd_t *CmdPtr);
  *
  *  \sa #CS_DISABLE_NAME_TABLE_CC
  */
-void CS_DisableNameTablesCmd(const CS_TableNameCmd_t *CmdPtr);
+CFE_Status_t CS_DisableNameTableCmd(const CS_DisableNameTableCmd_t *CmdPtr);
 
 /**
  * \brief Process an enable background checking for a Table
@@ -146,6 +145,6 @@ void CS_DisableNameTablesCmd(const CS_TableNameCmd_t *CmdPtr);
  *
  *  \sa #CS_ENABLE_NAME_TABLE_CC
  */
-void CS_EnableNameTablesCmd(const CS_TableNameCmd_t *CmdPtr);
+CFE_Status_t CS_EnableNameTableCmd(const CS_EnableNameTableCmd_t *CmdPtr);
 
 #endif

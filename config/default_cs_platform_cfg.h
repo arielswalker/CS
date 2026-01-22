@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -19,29 +18,24 @@
 
 /**
  * @file
- *   Specification for the CFS Checksum constants for message IDs
+ *
+ * Checksum (CS) Application Platform Configuration Header File
+ *
+ * This is a compatibility header for the "platform_cfg.h" file that has
+ * traditionally provided both public and private config definitions
+ * for each CFS app.
+ *
+ * These definitions are now provided in two separate files, one for
+ * the public/mission scope and one for internal scope.
+ *
+ * @note This file may be overridden/superceded by mission-provided defintions
+ * either by overriding this header or by generating definitions from a command/data
+ * dictionary tool.
  */
-#ifndef CS_MSGIDS_H
-#define CS_MSGIDS_H
+#ifndef DEFAULT_CS_PLATFORM_CFG_H
+#define DEFAULT_CS_PLATFORM_CFG_H
 
-/**
- * \defgroup cfscscmdmid CFS Checksum Command Message IDs
- * \{
- */
-
-#define CS_CMD_MID              (0x189F) /**< \brief CS Command Message ID */
-#define CS_SEND_HK_MID          (0x18A0) /**< \brief CS Housekeeping Request Message ID */
-#define CS_BACKGROUND_CYCLE_MID (0x18A1) /**< \brief CS Background Cycle Message ID */
-
-/**\}*/
-
-/**
- * \defgroup cfscstlmmid CFS Checksum Telemetry Message IDs
- * \{
- */
-
-#define CS_HK_TLM_MID (0x08A4) /**< \brief CS Housekeeping Telemetry Message ID */
-
-/**\}*/
+#include "cs_mission_cfg.h"
+#include "cs_internal_cfg.h"
 
 #endif

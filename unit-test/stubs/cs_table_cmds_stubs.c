@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -28,14 +27,18 @@
 
 /*
  * ----------------------------------------------------
- * Generated stub function for CS_DisableNameTablesCmd()
+ * Generated stub function for CS_DisableNameTableCmd()
  * ----------------------------------------------------
  */
-void CS_DisableNameTablesCmd(const CS_TableNameCmd_t *CmdPtr)
+CFE_Status_t CS_DisableNameTableCmd(const CS_DisableNameTableCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_DisableNameTablesCmd, const CS_TableNameCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_DisableNameTableCmd, CFE_Status_t);
 
-    UT_GenStub_Execute(CS_DisableNameTablesCmd, Basic, NULL);
+    UT_GenStub_AddParam(CS_DisableNameTableCmd, const CS_DisableNameTableCmd_t *, CmdPtr);
+
+    UT_GenStub_Execute(CS_DisableNameTableCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_DisableNameTableCmd, CFE_Status_t);
 }
 
 /*
@@ -43,23 +46,31 @@ void CS_DisableNameTablesCmd(const CS_TableNameCmd_t *CmdPtr)
  * Generated stub function for CS_DisableTablesCmd()
  * ----------------------------------------------------
  */
-void CS_DisableTablesCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_DisableTablesCmd(const CS_DisableTablesCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_DisableTablesCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_DisableTablesCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_DisableTablesCmd, const CS_DisableTablesCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_DisableTablesCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_DisableTablesCmd, CFE_Status_t);
 }
 
 /*
  * ----------------------------------------------------
- * Generated stub function for CS_EnableNameTablesCmd()
+ * Generated stub function for CS_EnableNameTableCmd()
  * ----------------------------------------------------
  */
-void CS_EnableNameTablesCmd(const CS_TableNameCmd_t *CmdPtr)
+CFE_Status_t CS_EnableNameTableCmd(const CS_EnableNameTableCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_EnableNameTablesCmd, const CS_TableNameCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_EnableNameTableCmd, CFE_Status_t);
 
-    UT_GenStub_Execute(CS_EnableNameTablesCmd, Basic, NULL);
+    UT_GenStub_AddParam(CS_EnableNameTableCmd, const CS_EnableNameTableCmd_t *, CmdPtr);
+
+    UT_GenStub_Execute(CS_EnableNameTableCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_EnableNameTableCmd, CFE_Status_t);
 }
 
 /*
@@ -67,33 +78,45 @@ void CS_EnableNameTablesCmd(const CS_TableNameCmd_t *CmdPtr)
  * Generated stub function for CS_EnableTablesCmd()
  * ----------------------------------------------------
  */
-void CS_EnableTablesCmd(const CS_NoArgsCmd_t *CmdPtr)
+CFE_Status_t CS_EnableTablesCmd(const CS_EnableTablesCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_EnableTablesCmd, const CS_NoArgsCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_EnableTablesCmd, CFE_Status_t);
+
+    UT_GenStub_AddParam(CS_EnableTablesCmd, const CS_EnableTablesCmd_t *, CmdPtr);
 
     UT_GenStub_Execute(CS_EnableTablesCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_EnableTablesCmd, CFE_Status_t);
 }
 
 /*
  * ----------------------------------------------------
- * Generated stub function for CS_RecomputeBaselineTablesCmd()
+ * Generated stub function for CS_RecomputeBaselineTableCmd()
  * ----------------------------------------------------
  */
-void CS_RecomputeBaselineTablesCmd(const CS_TableNameCmd_t *CmdPtr)
+CFE_Status_t CS_RecomputeBaselineTableCmd(const CS_RecomputeBaselineTableCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_RecomputeBaselineTablesCmd, const CS_TableNameCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_RecomputeBaselineTableCmd, CFE_Status_t);
 
-    UT_GenStub_Execute(CS_RecomputeBaselineTablesCmd, Basic, NULL);
+    UT_GenStub_AddParam(CS_RecomputeBaselineTableCmd, const CS_RecomputeBaselineTableCmd_t *, CmdPtr);
+
+    UT_GenStub_Execute(CS_RecomputeBaselineTableCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_RecomputeBaselineTableCmd, CFE_Status_t);
 }
 
 /*
  * ----------------------------------------------------
- * Generated stub function for CS_ReportBaselineTablesCmd()
+ * Generated stub function for CS_ReportBaselineTableCmd()
  * ----------------------------------------------------
  */
-void CS_ReportBaselineTablesCmd(const CS_TableNameCmd_t *CmdPtr)
+CFE_Status_t CS_ReportBaselineTableCmd(const CS_ReportBaselineTableCmd_t *CmdPtr)
 {
-    UT_GenStub_AddParam(CS_ReportBaselineTablesCmd, const CS_TableNameCmd_t *, CmdPtr);
+    UT_GenStub_SetupReturnBuffer(CS_ReportBaselineTableCmd, CFE_Status_t);
 
-    UT_GenStub_Execute(CS_ReportBaselineTablesCmd, Basic, NULL);
+    UT_GenStub_AddParam(CS_ReportBaselineTableCmd, const CS_ReportBaselineTableCmd_t *, CmdPtr);
+
+    UT_GenStub_Execute(CS_ReportBaselineTableCmd, Basic, NULL);
+
+    return UT_GenStub_GetReturnValue(CS_ReportBaselineTableCmd, CFE_Status_t);
 }

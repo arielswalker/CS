@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -23,7 +22,7 @@
 
 #include "cs_msg.h"
 #include "cs_msgdefs.h"
-#include "cs_events.h"
+#include "cs_eventids.h"
 #include "cs_version.h"
 #include "cs_utils.h"
 #include "cs_test_utils.h"
@@ -34,6 +33,8 @@
 #include "uttest.h"
 #include "utassert.h"
 #include "utstubs.h"
+
+#define CS_UT_TABLE_HANDLE(x) CFE_TBL_HandleFromID(CFE_TBL_HANDLEID_C(CFE_ResourceId_FromInteger(x)))
 
 /* cs_table_processing_tests globals */
 uint8 call_count_CFE_EVS_SendEvent;
@@ -62,3255 +63,603 @@ CFE_Status_t CS_TABLE_PROCESSING_TEST_CFE_TBL_LoadHook(void *UserObj, int32 Stub
     return CFE_SUCCESS;
 }
 
-void CS_ValidateEepromChecksumDefinitionTable_Test_Nominal(void)
+void Test_CS_ValidateEepromChecksumDefinitionTable(void)
 {
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    /* Test case for:
+     * CFE_Status_t CS_ValidateEepromChecksumDefinitionTable(void *TblPtr);
+     */
 
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS EEPROM Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefEepromTblPtr[0].State = CS_STATE_ENABLED; /* All other states are empty by default, and so this test
-                                                               also covers CS_STATE_EMPTY branch */
-
-    /* Execute the function being tested */
-    Result = CS_ValidateEepromChecksumDefinitionTable(CS_AppData.DefEepromTblPtr);
-
-    /* Verify results */
+    /* Nominal, enabled + disabled, rest empty */
+    CS_AppData.DefaultEepromDefTable[0].State = CS_ChecksumState_ENABLED;
+    CS_AppData.DefaultEepromDefTable[1].State = CS_ChecksumState_DISABLED;
+    UtAssert_INT32_EQ(CS_ValidateEepromChecksumDefinitionTable(CS_AppData.DefaultEepromDefTable), CFE_SUCCESS);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_EEPROM_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == CFE_SUCCESS, "Result == CFE_SUCCESS");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateEepromChecksumDefinitionTable_Test_IllegalChecksumRangeStateEnabled(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "EEPROM Table Validate: Illegal checksum range found in Entry ID %%d, CFE_PSP_MemValidateRange returned: "
-             "0x%%08X");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS EEPROM Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefEepromTblPtr[0].State = CS_STATE_ENABLED;
-
-    /* Set to generate error message CS_VAL_EEPROM_RANGE_ERR_EID */
-    UT_SetDeferredRetcode(UT_KEY(CFE_PSP_MemValidateRange), 1, -1);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateEepromChecksumDefinitionTable(CS_AppData.DefEepromTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_EEPROM_RANGE_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_EEPROM_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateEepromChecksumDefinitionTable_Test_IllegalChecksumRangeStateDisabled(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "EEPROM Table Validate: Illegal checksum range found in Entry ID %%d, CFE_PSP_MemValidateRange returned: "
-             "0x%%08X");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS EEPROM Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefEepromTblPtr[0].State = CS_STATE_DISABLED;
-
-    /* Set to generate error message CS_VAL_EEPROM_RANGE_ERR_EID */
-    UT_SetDeferredRetcode(UT_KEY(CFE_PSP_MemValidateRange), 1, -1);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateEepromChecksumDefinitionTable(CS_AppData.DefEepromTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_EEPROM_RANGE_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_EEPROM_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateEepromChecksumDefinitionTable_Test_IllegalStateField(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "EEPROM Table Validate: Illegal State Field (0x%%04X) found in Entry ID %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS EEPROM Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefEepromTblPtr[0].State = 0xFFFF;
-
-    /* Execute the function being tested */
-    Result = CS_ValidateEepromChecksumDefinitionTable(CS_AppData.DefEepromTblPtr);
-
-    /* Verify results */
-
+    /* Error in state */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultEepromDefTable[0].State = CS_ChecksumState_UNDEFINED;
+    CS_AppData.DefaultEepromDefTable[1].State = CS_ChecksumState_UNDEFINED;
+    UtAssert_INT32_EQ(CS_ValidateEepromChecksumDefinitionTable(CS_AppData.DefaultEepromDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_EEPROM_STATE_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_EEPROM_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateEepromChecksumDefinitionTable_Test_TableErrorResult(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "EEPROM Table Validate: Illegal checksum range found in Entry ID %%d, CFE_PSP_MemValidateRange returned: "
-             "0x%%08X");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS EEPROM Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefEepromTblPtr[0].State = CS_STATE_DISABLED;
-    CS_AppData.DefEepromTblPtr[1].State = CS_STATE_DISABLED;
-
-    /* Set to generate error message CS_VAL_EEPROM_RANGE_ERR_EID */
+    /* Error in range */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultEepromDefTable[0].State = CS_ChecksumState_ENABLED;
+    CS_AppData.DefaultEepromDefTable[1].State = CS_ChecksumState_DISABLED;
     UT_SetDefaultReturnValue(UT_KEY(CFE_PSP_MemValidateRange), -1);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateEepromChecksumDefinitionTable(CS_AppData.DefEepromTblPtr);
-
-    /* Verify results */
+    UtAssert_INT32_EQ(CS_ValidateEepromChecksumDefinitionTable(CS_AppData.DefaultEepromDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_EEPROM_RANGE_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_EEPROM_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
 }
 
-void CS_ValidateEepromChecksumDefinitionTable_Test_UndefTableErrorResult(void)
+void Test_CS_ValidateMemoryChecksumDefinitionTable(void)
 {
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    /* Test case for:
+     * CFE_Status_t CS_ValidateMemoryChecksumDefinitionTable(void *TblPtr);
+     */
 
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "EEPROM Table Validate: Illegal checksum range found in Entry ID %%d, CFE_PSP_MemValidateRange returned: "
-             "0x%%08X");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS EEPROM Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefEepromTblPtr[0].State = CS_STATE_DISABLED;
-    CS_AppData.DefEepromTblPtr[1].State = CS_STATE_UNDEFINED;
-
-    /* Set to generate error message CS_VAL_EEPROM_RANGE_ERR_EID */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_PSP_MemValidateRange), -1);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateEepromChecksumDefinitionTable(CS_AppData.DefEepromTblPtr);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_EEPROM_RANGE_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_EEPROM_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateMemoryChecksumDefinitionTable_Test_Nominal(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Memory Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefMemoryTblPtr[0].State = CS_STATE_ENABLED; /* All other states are empty by default, and so this test
-                                                               also covers CS_STATE_EMPTY branch */
-
-    /* Execute the function being tested */
-    Result = CS_ValidateMemoryChecksumDefinitionTable(CS_AppData.DefMemoryTblPtr);
-
-    /* Verify results */
+    /* Nominal, enabled + disabled, rest empty */
+    CS_AppData.DefaultMemoryDefTable[0].State = CS_ChecksumState_ENABLED;
+    CS_AppData.DefaultMemoryDefTable[1].State = CS_ChecksumState_DISABLED;
+    UtAssert_INT32_EQ(CS_ValidateMemoryChecksumDefinitionTable(CS_AppData.DefaultMemoryDefTable), CFE_SUCCESS);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_MEMORY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == CFE_SUCCESS, "Result == CFE_SUCCESS");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateMemoryChecksumDefinitionTable_Test_IllegalChecksumRangeStateEnabled(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "Memory Table Validate: Illegal checksum range found in Entry ID %%d, CFE_PSP_MemValidateRange returned: "
-             "0x%%08X");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Memory Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefMemoryTblPtr[0].State = CS_STATE_ENABLED;
-
-    /* Set to generate error message CS_VAL_MEMORY_RANGE_ERR_EID */
-    UT_SetDeferredRetcode(UT_KEY(CFE_PSP_MemValidateRange), 1, -1);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateMemoryChecksumDefinitionTable(CS_AppData.DefMemoryTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_MEMORY_RANGE_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_MEMORY_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateMemoryChecksumDefinitionTable_Test_IllegalChecksumRangeStateDisabled(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "Memory Table Validate: Illegal checksum range found in Entry ID %%d, CFE_PSP_MemValidateRange returned: "
-             "0x%%08X");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Memory Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefMemoryTblPtr[0].State = CS_STATE_DISABLED;
-
-    /* Set to generate error message CS_VAL_MEMORY_RANGE_ERR_EID */
-    UT_SetDeferredRetcode(UT_KEY(CFE_PSP_MemValidateRange), 1, -1);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateMemoryChecksumDefinitionTable(CS_AppData.DefMemoryTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_MEMORY_RANGE_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_MEMORY_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateMemoryChecksumDefinitionTable_Test_IllegalStateField(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "Memory Table Validate: Illegal State Field (0x%%04X) found in Entry ID %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Memory Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefMemoryTblPtr[0].State = 0xFFFF;
-
-    /* Execute the function being tested */
-    Result = CS_ValidateMemoryChecksumDefinitionTable(CS_AppData.DefMemoryTblPtr);
-
-    /* Verify results */
-
+    /* Error in state */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultMemoryDefTable[0].State = CS_ChecksumState_UNDEFINED;
+    CS_AppData.DefaultMemoryDefTable[1].State = CS_ChecksumState_UNDEFINED;
+    UtAssert_INT32_EQ(CS_ValidateMemoryChecksumDefinitionTable(CS_AppData.DefaultMemoryDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_MEMORY_STATE_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_MEMORY_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateMemoryChecksumDefinitionTable_Test_TableErrorResult(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "Memory Table Validate: Illegal checksum range found in Entry ID %%d, CFE_PSP_MemValidateRange returned: "
-             "0x%%08X");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Memory Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefMemoryTblPtr[0].State = CS_STATE_DISABLED;
-    CS_AppData.DefMemoryTblPtr[1].State = CS_STATE_DISABLED;
-
-    /* Set to generate error message CS_VAL_MEMORY_RANGE_ERR_EID */
+    /* Error in range */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultMemoryDefTable[0].State = CS_ChecksumState_ENABLED;
+    CS_AppData.DefaultMemoryDefTable[1].State = CS_ChecksumState_DISABLED;
     UT_SetDefaultReturnValue(UT_KEY(CFE_PSP_MemValidateRange), -1);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateMemoryChecksumDefinitionTable(CS_AppData.DefMemoryTblPtr);
-
-    /* Verify results */
+    UtAssert_INT32_EQ(CS_ValidateMemoryChecksumDefinitionTable(CS_AppData.DefaultMemoryDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_MEMORY_RANGE_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_MEMORY_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
 }
 
-void CS_ValidateMemoryChecksumDefinitionTable_Test_UndefTableErrorResult(void)
+void Test_CS_ValidateTablesChecksumDefinitionTable(void)
 {
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    /* Test case for:
+     * CFE_Status_t CS_ValidateTablesChecksumDefinitionTable(void *TblPtr);
+     */
 
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "Memory Table Validate: Illegal checksum range found in Entry ID %%d, CFE_PSP_MemValidateRange returned: "
-             "0x%%08X");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Memory Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefMemoryTblPtr[0].State = CS_STATE_DISABLED;
-    CS_AppData.DefMemoryTblPtr[1].State = CS_STATE_UNDEFINED;
-
-    /* Set to generate error message CS_VAL_MEMORY_RANGE_ERR_EID */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_PSP_MemValidateRange), -1);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateMemoryChecksumDefinitionTable(CS_AppData.DefMemoryTblPtr);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_MEMORY_RANGE_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_MEMORY_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateTablesChecksumDefinitionTable_Test_Nominal(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefTablesTblPtr[0].State = CS_STATE_ENABLED; /* All other states are empty by default, and so this test
-                                                               also covers CS_STATE_EMPTY branch */
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefTablesTblPtr);
-
-    /* Verify results */
+    /* Nominal, enabled + disabled, rest empty */
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[0].Name, "UT0");
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[1].Name, "UT1");
+    UtAssert_INT32_EQ(CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefaultTablesDefTable), CFE_SUCCESS);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_TABLES_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == CFE_SUCCESS, "Result == CFE_SUCCESS");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateTablesChecksumDefinitionTable_Test_DuplicateNameStateEmpty(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    /* All states are empty by default */
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefTablesTblPtr[1].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefTablesTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_TABLES_DEF_TBL_DUPL_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_TABLES_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateTablesChecksumDefinitionTable_Test_DuplicateNameStateEnabled(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefTablesTblPtr[0].State = CS_STATE_ENABLED; /* All other states are empty by default, and so this test
-                                                               also covers CS_STATE_EMPTY branch */
-    CS_AppData.DefTablesTblPtr[1].State = CS_STATE_ENABLED; /* All other states are empty by default, and so this test
-                                                               also covers CS_STATE_EMPTY branch */
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefTablesTblPtr[1].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefTablesTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_TABLES_DEF_TBL_DUPL_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_TABLES_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateTablesChecksumDefinitionTable_Test_DuplicateNameStateDisabled(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefTablesTblPtr[0].State = CS_STATE_DISABLED; /* All other states are empty by default, and so this test
-                                                                also covers CS_STATE_EMPTY branch */
-    CS_AppData.DefTablesTblPtr[1].State = CS_STATE_DISABLED; /* All other states are empty by default, and so this test
-                                                                also covers CS_STATE_EMPTY branch */
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefTablesTblPtr[1].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefTablesTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_TABLES_DEF_TBL_DUPL_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_TABLES_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateTablesChecksumDefinitionTable_Test_IllegalStateField(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table Validate: Illegal State Field (0x%%04X) found with name %%s");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefTablesTblPtr[0].State = 0xFFFF;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefTablesTblPtr);
-
-    /* Verify results */
-
+    /* Error in state */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_UNDEFINED;
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_UNDEFINED;
+    UtAssert_INT32_EQ(CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefaultTablesDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_TABLES_STATE_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_TABLES_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateTablesChecksumDefinitionTable_Test_IllegalStateEmptyName(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table Validate: Illegal State (0x%%04X) with empty name at entry %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefTablesTblPtr[0].State = CS_STATE_ENABLED;
-
-    /* Execute the function being tested */
-    Result = CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefTablesTblPtr);
-
-    /* Verify results */
-
+    /* Error in name (zero) */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultTablesDefTable[0].State   = CS_ChecksumState_ENABLED;
+    CS_AppData.DefaultTablesDefTable[0].Name[0] = 0;
+    CS_AppData.DefaultTablesDefTable[1].State   = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[1].Name, "UT1");
+    UtAssert_INT32_EQ(CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefaultTablesDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_TABLES_DEF_TBL_ZERO_NAME_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_TABLES_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateTablesChecksumDefinitionTable_Test_TableErrorResult(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    /* All states are empty by default */
-    CS_AppData.DefTablesTblPtr[0].State = CS_STATE_DISABLED;
-    CS_AppData.DefTablesTblPtr[1].State = CS_STATE_DISABLED;
-    CS_AppData.DefTablesTblPtr[2].State = CS_STATE_DISABLED;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefTablesTblPtr[1].Name, "name", 10);
-    strncpy(CS_AppData.DefTablesTblPtr[2].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefTablesTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_TABLES_DEF_TBL_DUPL_ERR_EID);
+    /* Error in name (long) */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_ENABLED;
+    memset(CS_AppData.DefaultTablesDefTable[0].Name, 'x', sizeof(CS_AppData.DefaultTablesDefTable[0].Name));
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[1].Name, "UT1");
+    UtAssert_INT32_EQ(CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefaultTablesDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_TABLES_DEF_TBL_LONG_NAME_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_TABLES_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateTablesChecksumDefinitionTable_Test_UndefTableErrorResult(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefTablesTblPtr[0].State = CS_STATE_DISABLED;
-    CS_AppData.DefTablesTblPtr[1].State = CS_STATE_DISABLED;
-    CS_AppData.DefTablesTblPtr[2].State = CS_STATE_UNDEFINED;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefTablesTblPtr[1].Name, "name", 10);
-    strncpy(CS_AppData.DefTablesTblPtr[2].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefTablesTblPtr);
-
-    /* Verify results */
+    /* Error in name (duplicate) */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[0].Name, "UT1");
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[1].Name, "UT1");
+    UtAssert_INT32_EQ(CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefaultTablesDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_TABLES_DEF_TBL_DUPL_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_TABLES_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
 }
 
-void CS_ValidateTablesChecksumDefinitionTable_Test_CsTableError(void)
+void Test_CS_ValidateAppChecksumDefinitionTable(void)
 {
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    /* Test case for:
+     * CFE_Status_t CS_ValidateAppChecksumDefinitionTable(void *TblPtr);
+     */
 
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Tables Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefTablesTblPtr[0].State = CS_STATE_DISABLED;
-    CS_AppData.DefTablesTblPtr[1].State = CS_STATE_DISABLED;
-    CS_AppData.DefTablesTblPtr[2].State = CS_STATE_UNDEFINED;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefTablesTblPtr[1].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateTablesChecksumDefinitionTable(CS_AppData.DefTablesTblPtr);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_TABLES_DEF_TBL_DUPL_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_TABLES_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateAppChecksumDefinitionTable_Test_Nominal(void)
-{
-    CS_AppData.DefAppTblPtr[0].State = CS_STATE_ENABLED;
-    strncpy(CS_AppData.DefAppTblPtr[0].Name, "app1", sizeof(CS_AppData.DefAppTblPtr[0].Name));
-    CS_AppData.DefAppTblPtr[1].State = CS_STATE_ENABLED;
-    strncpy(CS_AppData.DefAppTblPtr[1].Name, "app2", sizeof(CS_AppData.DefAppTblPtr[1].Name));
-
-    /* Execute the function being tested */
-    UtAssert_INT32_EQ(CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefAppTblPtr), CFE_SUCCESS);
-
-    /* Verify results */
+    /* Nominal, enabled + disabled, rest empty */
+    CS_AppData.DefaultAppDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[0].Name, "UT0");
+    CS_AppData.DefaultAppDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[1].Name, "UT1");
+    UtAssert_INT32_EQ(CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefaultAppDefTable), CFE_SUCCESS);
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_APP_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
-}
 
-void CS_ValidateAppChecksumDefinitionTable_Test_DuplicateNameStateEmpty(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    /* All states are empty by default */
-
-    strncpy(CS_AppData.DefAppTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefAppTblPtr[1].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefAppTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_APP_DEF_TBL_DUPL_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_APP_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateAppChecksumDefinitionTable_Test_DuplicateNameStateEnabled(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefAppTblPtr[0].State = CS_STATE_ENABLED; /* All other states are empty by default, and so this test also
-                                                            covers CS_STATE_EMPTY branch */
-    CS_AppData.DefAppTblPtr[1].State = CS_STATE_ENABLED; /* All other states are empty by default, and so this test also
-                                                            covers CS_STATE_EMPTY branch */
-
-    strncpy(CS_AppData.DefAppTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefAppTblPtr[1].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefAppTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_APP_DEF_TBL_DUPL_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_APP_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateAppChecksumDefinitionTable_Test_DuplicateNameStateDisabled(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefAppTblPtr[0].State = CS_STATE_DISABLED; /* All other states are empty by default, and so this test
-                                                             also covers CS_STATE_EMPTY branch */
-    CS_AppData.DefAppTblPtr[1].State = CS_STATE_DISABLED; /* All other states are empty by default, and so this test
-                                                             also covers CS_STATE_EMPTY branch */
-
-    strncpy(CS_AppData.DefAppTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefAppTblPtr[1].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefAppTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_APP_DEF_TBL_DUPL_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_APP_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateAppChecksumDefinitionTable_Test_IllegalStateField(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table Validate: Illegal State Field (0x%%04X) found with name %%s");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefAppTblPtr[0].State = 0xFFFF;
-
-    strncpy(CS_AppData.DefAppTblPtr[0].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefAppTblPtr);
-
-    /* Verify results */
-
+    /* Error in state */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultAppDefTable[0].State = CS_ChecksumState_UNDEFINED;
+    CS_AppData.DefaultAppDefTable[1].State = CS_ChecksumState_UNDEFINED;
+    UtAssert_INT32_EQ(CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefaultAppDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_APP_STATE_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_APP_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateAppChecksumDefinitionTable_Test_IllegalStateEmptyName(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table Validate: Illegal State (0x%%04X) with empty name at entry %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefAppTblPtr[0].State = CS_STATE_ENABLED;
-
-    /* Execute the function being tested */
-    Result = CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefAppTblPtr);
-
-    /* Verify results */
-
+    /* Error in name (zero) */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultAppDefTable[0].State   = CS_ChecksumState_ENABLED;
+    CS_AppData.DefaultAppDefTable[0].Name[0] = 0;
+    CS_AppData.DefaultAppDefTable[1].State   = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[1].Name, "UT1");
+    UtAssert_INT32_EQ(CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefaultAppDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_APP_DEF_TBL_ZERO_NAME_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_APP_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateAppChecksumDefinitionTable_Test_LongName(void)
-{
-    memset(CS_AppData.DefAppTblPtr[0].Name, 'x', sizeof(CS_AppData.DefAppTblPtr[0].Name));
-    memset(CS_AppData.DefAppTblPtr[1].Name, 'y', sizeof(CS_AppData.DefAppTblPtr[1].Name));
-
-    UtAssert_INT32_EQ(CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefAppTblPtr), CS_TABLE_ERROR);
-
-    /* Verify results */
+    /* Error in name (long) */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultAppDefTable[0].State = CS_ChecksumState_ENABLED;
+    memset(CS_AppData.DefaultAppDefTable[0].Name, 'x', sizeof(CS_AppData.DefaultAppDefTable[0].Name));
+    CS_AppData.DefaultAppDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[1].Name, "UT1");
+    UtAssert_INT32_EQ(CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefaultAppDefTable), CS_TABLE_ERROR);
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_APP_DEF_TBL_LONG_NAME_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_APP_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-}
 
-void CS_ValidateAppChecksumDefinitionTable_Test_TableErrorResult(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    /* All states are empty by default */
-    CS_AppData.DefAppTblPtr[0].State = CS_STATE_DISABLED;
-    CS_AppData.DefAppTblPtr[1].State = CS_STATE_DISABLED;
-    CS_AppData.DefAppTblPtr[2].State = CS_STATE_DISABLED;
-
-    strncpy(CS_AppData.DefAppTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefAppTblPtr[1].Name, "name", 10);
-    strncpy(CS_AppData.DefAppTblPtr[2].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefAppTblPtr);
-
-    /* Verify results */
+    /* Error in name (duplicate) */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultAppDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[0].Name, "UT1");
+    CS_AppData.DefaultAppDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[1].Name, "UT1");
+    UtAssert_INT32_EQ(CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefaultAppDefTable), CS_TABLE_ERROR);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 2);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_APP_DEF_TBL_DUPL_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_APP_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
 }
 
-void CS_ValidateAppChecksumDefinitionTable_Test_UndefTableErrorResult(void)
+void Test_CS_ProcessNewEepromMemoryDefinitionTable(void)
 {
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    /* Test case for:
+     * void CS_ProcessNewEepromMemoryDefinitionTable(CS_TableWrapper_t *tw);
+     */
+    CS_TableWrapper_t *tw;
 
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table Validate: Duplicate Name (%%s) found at entries %%d and %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefAppTblPtr[0].State = CS_STATE_DISABLED;
-    CS_AppData.DefAppTblPtr[1].State = CS_STATE_DISABLED;
-    CS_AppData.DefAppTblPtr[2].State = CS_STATE_UNDEFINED;
-
-    strncpy(CS_AppData.DefAppTblPtr[0].Name, "name", 10);
-    strncpy(CS_AppData.DefAppTblPtr[1].Name, "name", 10);
-    strncpy(CS_AppData.DefAppTblPtr[2].Name, "name", 10);
-
-    /* Execute the function being tested */
-    Result = CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefAppTblPtr);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_APP_DEF_TBL_DUPL_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_APP_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ValidateAppChecksumDefinitionTable_Test_EmptyNameTableResult(void)
-{
-    CFE_Status_t Result;
-    int32        strCmpResult;
-    char         ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table Validate: Illegal State (0x%%04X) with empty name at entry %%d");
-
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS Apps Table verification results: good = %%d, bad = %%d, unused = %%d");
-
-    CS_AppData.DefAppTblPtr[0].State = CS_STATE_ENABLED;
-    CS_AppData.DefAppTblPtr[1].State = CS_STATE_ENABLED;
-    CS_AppData.DefAppTblPtr[2].State = CS_STATE_ENABLED;
-
-    /* Execute the function being tested */
-    Result = CS_ValidateAppChecksumDefinitionTable(CS_AppData.DefAppTblPtr);
-
-    /* Verify results */
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_VAL_APP_DEF_TBL_ZERO_NAME_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[0], context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventID, CS_VAL_APP_INF_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[1].EventType, CFE_EVS_EventType_INFORMATION);
-
-    strCmpResult =
-        strncmp(ExpectedEventString[1], context_CFE_EVS_SendEvent[1].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
-
-    UtAssert_True(Result == CS_TABLE_ERROR, "Result == CS_TABLE_ERROR");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewEepromMemoryDefinitionTable_Test_EEPROMTableNominal(void)
-{
-    /* Handles both cases of "DefEntry -> State" */
-
-    uint16 NumEntries = 1;
-    uint16 Table      = CS_EEPROM_TABLE;
-
-    CS_AppData.HkPacket.Payload.EepromCSState        = 99;
-    CS_AppData.DefEepromTblPtr[0].State              = 1;
-    CS_AppData.DefEepromTblPtr[0].NumBytesToChecksum = 2;
-    CS_AppData.DefEepromTblPtr[0].StartAddress       = 3;
-
-    /* Execute the function being tested */
-    CS_ProcessNewEepromMemoryDefinitionTable(CS_AppData.DefEepromTblPtr, CS_AppData.ResEepromTblPtr, NumEntries, Table);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.EepromCSState == 99, "CS_AppData.HkPacket.Payload.EepromCSState == 99");
-
-    UtAssert_True(CS_AppData.ResEepromTblPtr[0].State == 1, "CS_AppData.ResEepromTblPtr[0].State == 1");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResEepromTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[0].NumBytesToChecksum == 2,
-                  "CS_AppData.ResEepromTblPtr[0].NumBytesToChecksum == 2");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResEepromTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[0].ByteOffset == 0, "CS_AppData.ResEepromTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResEepromTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[0].StartAddress == 3, "CS_AppData.ResEepromTblPtr[0].StartAddress == 3");
-
-    UtAssert_True(CS_AppData.ResEepromTblPtr[1].State == CS_STATE_EMPTY,
-                  "CS_AppData.ResEepromTblPtr[1].State == CS_STATE_EMPTY");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[1].ComputedYet == false,
-                  "CS_AppData.ResEepromTblPtr[1].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[1].NumBytesToChecksum == 0,
-                  "CS_AppData.ResEepromTblPtr[1].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[1].ComparisonValue == 0,
-                  "CS_AppData.ResEepromTblPtr[1].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[1].ByteOffset == 0, "CS_AppData.ResEepromTblPtr[1].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[1].TempChecksumValue == 0,
-                  "CS_AppData.ResEepromTblPtr[1].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[1].StartAddress == 0, "CS_AppData.ResEepromTblPtr[1].StartAddress == 0");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewEepromMemoryDefinitionTable_Test_MemoryTableNominal(void)
-{
-    /* Handles both cases of "DefEntry -> State" */
-
-    uint16 NumEntries = 1;
-    uint16 Table      = CS_MEMORY_TABLE;
-
-    CS_AppData.HkPacket.Payload.MemoryCSState        = 99;
-    CS_AppData.DefMemoryTblPtr[0].State              = 1;
-    CS_AppData.DefMemoryTblPtr[0].NumBytesToChecksum = 2;
-    CS_AppData.DefMemoryTblPtr[0].StartAddress       = 3;
-
-    /* Execute the function being tested */
-    CS_ProcessNewEepromMemoryDefinitionTable(CS_AppData.DefMemoryTblPtr, CS_AppData.ResMemoryTblPtr, NumEntries, Table);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.MemoryCSState == 99, "CS_AppData.HkPacket.Payload.MemoryCSState == 99");
-
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[0].State == 1, "CS_AppData.ResMemoryTblPtr[0].State == 1");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResMemoryTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[0].NumBytesToChecksum == 2,
-                  "CS_AppData.ResMemoryTblPtr[0].NumBytesToChecksum == 2");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResMemoryTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[0].ByteOffset == 0, "CS_AppData.ResMemoryTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResMemoryTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[0].StartAddress == 3, "CS_AppData.ResMemoryTblPtr[0].StartAddress == 3");
-
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[1].State == CS_STATE_EMPTY,
-                  "CS_AppData.ResMemoryTblPtr[1].State == CS_STATE_EMPTY");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[1].ComputedYet == false,
-                  "CS_AppData.ResMemoryTblPtr[1].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[1].NumBytesToChecksum == 0,
-                  "CS_AppData.ResMemoryTblPtr[1].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[1].ComparisonValue == 0,
-                  "CS_AppData.ResMemoryTblPtr[1].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[1].ByteOffset == 0, "CS_AppData.ResMemoryTblPtr[1].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[1].TempChecksumValue == 0,
-                  "CS_AppData.ResMemoryTblPtr[1].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[1].StartAddress == 0, "CS_AppData.ResMemoryTblPtr[1].StartAddress == 0");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewEepromMemoryDefinitionTable_Test_EEPROMTableNoValidEntries(void)
-{
-    int32 strCmpResult;
-    char  ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "CS %%s Table: No valid entries in the table");
-
-    /* Handles both cases of "DefEntry -> State" */
-
-    uint16 NumEntries = 1;
-    uint16 Table      = CS_EEPROM_TABLE;
-
-    CS_AppData.HkPacket.Payload.MemoryCSState = 99;
-
-    /* Execute the function being tested */
-    CS_ProcessNewEepromMemoryDefinitionTable(CS_AppData.DefMemoryTblPtr, CS_AppData.ResMemoryTblPtr, NumEntries, Table);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.MemoryCSState == 99, "CS_AppData.HkPacket.Payload.MemoryCSState == 99");
-
+    /* path where all entries are empty */
+    tw = &CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE];
+    UtAssert_VOIDCALL(CS_ProcessNewEepromMemoryDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_PROCESS_EEPROM_MEMORY_NO_ENTRIES_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
+    /* path where some entries not empty */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultEepromDefTable[0].State = CS_ChecksumState_ENABLED;
+    CS_AppData.DefaultEepromDefTable[1].State = CS_ChecksumState_DISABLED;
+    UtAssert_VOIDCALL(CS_ProcessNewEepromMemoryDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
 
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewEepromMemoryDefinitionTable_Test_MemoryTableNoValidEntries(void)
-{
-    int32 strCmpResult;
-    char  ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "CS %%s Table: No valid entries in the table");
-
-    /* Handles both cases of "DefEntry -> State" */
-
-    uint16 NumEntries = 1;
-    uint16 Table      = CS_MEMORY_TABLE;
-
-    CS_AppData.HkPacket.Payload.MemoryCSState = 99;
-
-    /* Execute the function being tested */
-    CS_ProcessNewEepromMemoryDefinitionTable(CS_AppData.DefMemoryTblPtr, CS_AppData.ResMemoryTblPtr, NumEntries, Table);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.MemoryCSState == 99, "CS_AppData.HkPacket.Payload.MemoryCSState == 99");
-
+    /* Where ResultsEntry is null */
+    CS_Test_ResetEventCheck();
+    UT_SetDeferredRetcode(UT_KEY(CS_GetResEntryAddr), 1, 0);
+    CS_AppData.DefaultEepromDefTable[0].State = CS_ChecksumState_ENABLED;
+    CS_AppData.DefaultEepromDefTable[1].State = CS_ChecksumState_DISABLED;
+    UtAssert_VOIDCALL(CS_ProcessNewEepromMemoryDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_PROCESS_EEPROM_MEMORY_NO_ENTRIES_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
+    /* Where DefEntry is null */
+    CS_Test_ResetEventCheck();
+    UT_SetDeferredRetcode(UT_KEY(CS_GetDefEntryAddr), 1, 0);
+    CS_AppData.DefaultEepromDefTable[0].State = CS_ChecksumState_ENABLED;
+    CS_AppData.DefaultEepromDefTable[1].State = CS_ChecksumState_DISABLED;
+    UtAssert_VOIDCALL(CS_ProcessNewEepromMemoryDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_PROCESS_EEPROM_MEMORY_NO_ENTRIES_INF_EID);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultEepromDefTable[0].State = CS_ChecksumState_ENABLED;
+    CS_AppData.DefaultEepromDefTable[1].State = CS_ChecksumState_DISABLED;
+    UtAssert_VOIDCALL(CS_ProcessNewEepromMemoryDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
 
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
+    /* exercise path where there is no global state */
+    tw->GlobalState = NULL;
+    CS_Test_ResetEventCheck();
+    UtAssert_VOIDCALL(CS_ProcessNewEepromMemoryDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
 }
 
-void CS_ProcessNewTablesDefinitionTable_Test_DefEepromTableHandle(void)
+void Test_CS_ProcessNewTablesDefinitionTable(void)
 {
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "CS.DefEepromTbl", 20);
-
-    CS_AppData.DefEepromTableHandle = 11;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.MemResTablesTblPtr == NULL, "CS_AppData.MemResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.AppResTablesTblPtr == NULL, "CS_AppData.AppResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.TblResTablesTblPtr == NULL, "CS_AppData.TblResTablesTblPtr == NULL");
-
-    UtAssert_True(CS_AppData.EepResTablesTblPtr == CS_AppData.ResTablesTblPtr,
-                  "CS_AppData.EepResTablesTblPtr == CS_AppData.ResTablesTblPtr");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].State == 88, "CS_AppData.ResTablesTblPtr[0].State == 88");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResTablesTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ByteOffset == 0, "CS_AppData.ResTablesTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].StartAddress == 0, "CS_AppData.ResTablesTblPtr[0].StartAddress == 0");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TblHandle == 11, "CS_AppData.ResTablesTblPtr[0].TblHandle == 11");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].IsCSOwner == true, "CS_AppData.ResTablesTblPtr[0].IsCSOwner == true");
-    UtAssert_True(strncmp(CS_AppData.ResTablesTblPtr[0].Name, "CS.DefEepromTbl", 20) == 0,
-                  "strncmp(CS_AppData.ResTablesTblPtr[0].Name, 'CS.DefEepromTbl', 20) == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.TablesCSState == 99, "CS_AppData.HkPacket.Payload.TablesCSState == 99");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewTablesDefinitionTable_Test_DefMemoryTableHandle(void)
-{
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "CS.DefMemoryTbl", 20);
-
-    CS_AppData.DefMemoryTableHandle = 11;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr == NULL, "CS_AppData.EepResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.AppResTablesTblPtr == NULL, "CS_AppData.AppResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.TblResTablesTblPtr == NULL, "CS_AppData.TblResTablesTblPtr == NULL");
-
-    UtAssert_True(CS_AppData.MemResTablesTblPtr == CS_AppData.ResTablesTblPtr,
-                  "CS_AppData.MemResTablesTblPtr == CS_AppData.ResTablesTblPtr");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].State == 88, "CS_AppData.ResTablesTblPtr[0].State == 88");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResTablesTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ByteOffset == 0, "CS_AppData.ResTablesTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].StartAddress == 0, "CS_AppData.ResTablesTblPtr[0].StartAddress == 0");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TblHandle == 11, "CS_AppData.ResTablesTblPtr[0].TblHandle == 11");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].IsCSOwner == true, "CS_AppData.ResTablesTblPtr[0].IsCSOwner == true");
-    UtAssert_True(strncmp(CS_AppData.ResTablesTblPtr[0].Name, "CS.DefMemoryTbl", 20) == 0,
-                  "strncmp(CS_AppData.ResTablesTblPtr[0].Name, 'CS.DefMemoryTbl', 20) == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.TablesCSState == 99, "CS_AppData.HkPacket.Payload.TablesCSState == 99");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewTablesDefinitionTable_Test_DefTablesTableHandle(void)
-{
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "CS.DefTablesTbl", 20);
-
-    CS_AppData.DefTablesTableHandle = 11;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr == NULL, "CS_AppData.EepResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.AppResTablesTblPtr == NULL, "CS_AppData.AppResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.MemResTablesTblPtr == NULL, "CS_AppData.MemResTablesTblPtr == NULL");
-
-    UtAssert_True(CS_AppData.TblResTablesTblPtr == CS_AppData.ResTablesTblPtr,
-                  "CS_AppData.TblResTablesTblPtr == CS_AppData.ResTablesTblPtr");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].State == 88, "CS_AppData.ResTablesTblPtr[0].State == 88");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResTablesTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ByteOffset == 0, "CS_AppData.ResTablesTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].StartAddress == 0, "CS_AppData.ResTablesTblPtr[0].StartAddress == 0");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TblHandle == 11, "CS_AppData.ResTablesTblPtr[0].TblHandle == 11");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].IsCSOwner == true, "CS_AppData.ResTablesTblPtr[0].IsCSOwner == true");
-    UtAssert_True(strncmp(CS_AppData.ResTablesTblPtr[0].Name, "CS.DefTablesTbl", 20) == 0,
-                  "strncmp(CS_AppData.ResTablesTblPtr[0].Name, 'CS.DefTablesTbl', 20) == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.TablesCSState == 99, "CS_AppData.HkPacket.Payload.TablesCSState == 99");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewTablesDefinitionTable_Test_DefAppTableHandle(void)
-{
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "CS.DefAppTbl", 20);
-
-    CS_AppData.DefAppTableHandle = 11;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr == NULL, "CS_AppData.EepResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.TblResTablesTblPtr == NULL, "CS_AppData.TblResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.MemResTablesTblPtr == NULL, "CS_AppData.MemResTablesTblPtr == NULL");
-
-    UtAssert_True(CS_AppData.AppResTablesTblPtr == CS_AppData.ResTablesTblPtr,
-                  "CS_AppData.AppResTablesTblPtr == CS_AppData.ResTablesTblPtr");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].State == 88, "CS_AppData.ResTablesTblPtr[0].State == 88");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResTablesTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ByteOffset == 0, "CS_AppData.ResTablesTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].StartAddress == 0, "CS_AppData.ResTablesTblPtr[0].StartAddress == 0");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TblHandle == 11, "CS_AppData.ResTablesTblPtr[0].TblHandle == 11");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].IsCSOwner == true, "CS_AppData.ResTablesTblPtr[0].IsCSOwner == true");
-    UtAssert_True(strncmp(CS_AppData.ResTablesTblPtr[0].Name, "CS.DefAppTbl", 20) == 0,
-                  "strncmp(CS_AppData.ResTablesTblPtr[0].Name, 'CS.DefAppTbl', 20) == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.TablesCSState == 99, "CS_AppData.HkPacket.Payload.TablesCSState == 99");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewTablesDefinitionTable_Test_ResEepromTableHandle(void)
-{
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "CS.ResEepromTbl", 20);
-
-    CS_AppData.ResEepromTableHandle = 11;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr == NULL, "CS_AppData.EepResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.MemResTablesTblPtr == NULL, "CS_AppData.MemResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.AppResTablesTblPtr == NULL, "CS_AppData.AppResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.TblResTablesTblPtr == NULL, "CS_AppData.TblResTablesTblPtr == NULL");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].State == 88, "CS_AppData.ResTablesTblPtr[0].State == 88");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResTablesTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ByteOffset == 0, "CS_AppData.ResTablesTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].StartAddress == 0, "CS_AppData.ResTablesTblPtr[0].StartAddress == 0");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TblHandle == 11, "CS_AppData.ResTablesTblPtr[0].TblHandle == 11");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].IsCSOwner == true, "CS_AppData.ResTablesTblPtr[0].IsCSOwner == true");
-    UtAssert_True(strncmp(CS_AppData.ResTablesTblPtr[0].Name, "CS.ResEepromTbl", 20) == 0,
-                  "strncmp(CS_AppData.ResTablesTblPtr[0].Name, 'CS.ResEepromTbl', 20) == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.TablesCSState == 99, "CS_AppData.HkPacket.Payload.TablesCSState == 99");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewTablesDefinitionTable_Test_ResMemoryTableHandle(void)
-{
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "CS.ResMemoryTbl", 20);
-
-    CS_AppData.ResMemoryTableHandle = 11;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr == NULL, "CS_AppData.EepResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.MemResTablesTblPtr == NULL, "CS_AppData.MemResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.AppResTablesTblPtr == NULL, "CS_AppData.AppResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.TblResTablesTblPtr == NULL, "CS_AppData.TblResTablesTblPtr == NULL");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].State == 88, "CS_AppData.ResTablesTblPtr[0].State == 88");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResTablesTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ByteOffset == 0, "CS_AppData.ResTablesTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].StartAddress == 0, "CS_AppData.ResTablesTblPtr[0].StartAddress == 0");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TblHandle == 11, "CS_AppData.ResTablesTblPtr[0].TblHandle == 11");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].IsCSOwner == true, "CS_AppData.ResTablesTblPtr[0].IsCSOwner == true");
-    UtAssert_True(strncmp(CS_AppData.ResTablesTblPtr[0].Name, "CS.ResMemoryTbl", 20) == 0,
-                  "strncmp(CS_AppData.ResTablesTblPtr[0].Name, 'CS.ResMemoryTbl', 20) == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.TablesCSState == 99, "CS_AppData.HkPacket.Payload.TablesCSState == 99");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewTablesDefinitionTable_Test_ResTablesTableHandle(void)
-{
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "CS.ResTablesTbl", 20);
-
-    CS_AppData.ResTablesTableHandle = 11;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr == NULL, "CS_AppData.EepResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.MemResTablesTblPtr == NULL, "CS_AppData.MemResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.AppResTablesTblPtr == NULL, "CS_AppData.AppResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.TblResTablesTblPtr == NULL, "CS_AppData.TblResTablesTblPtr == NULL");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].State == 88, "CS_AppData.ResTablesTblPtr[0].State == 88");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResTablesTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ByteOffset == 0, "CS_AppData.ResTablesTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].StartAddress == 0, "CS_AppData.ResTablesTblPtr[0].StartAddress == 0");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TblHandle == 11, "CS_AppData.ResTablesTblPtr[0].TblHandle == 11");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].IsCSOwner == true, "CS_AppData.ResTablesTblPtr[0].IsCSOwner == true");
-    UtAssert_True(strncmp(CS_AppData.ResTablesTblPtr[0].Name, "CS.ResTablesTbl", 20) == 0,
-                  "strncmp(CS_AppData.ResTablesTblPtr[0].Name, 'CS.ResTablesTbl', 20) == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.TablesCSState == 99, "CS_AppData.HkPacket.Payload.TablesCSState == 99");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewTablesDefinitionTable_Test_ResAppTableHandle(void)
-{
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    strncpy(CS_AppData.DefTablesTblPtr[0].Name, "CS.ResAppTbl", 20);
-
-    CS_AppData.ResAppTableHandle = 11;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr == NULL, "CS_AppData.EepResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.MemResTablesTblPtr == NULL, "CS_AppData.MemResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.AppResTablesTblPtr == NULL, "CS_AppData.AppResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.TblResTablesTblPtr == NULL, "CS_AppData.TblResTablesTblPtr == NULL");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].State == 88, "CS_AppData.ResTablesTblPtr[0].State == 88");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResTablesTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ByteOffset == 0, "CS_AppData.ResTablesTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].StartAddress == 0, "CS_AppData.ResTablesTblPtr[0].StartAddress == 0");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TblHandle == 11, "CS_AppData.ResTablesTblPtr[0].TblHandle == 11");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].IsCSOwner == true, "CS_AppData.ResTablesTblPtr[0].IsCSOwner == true");
-    UtAssert_True(strncmp(CS_AppData.ResTablesTblPtr[0].Name, "CS.ResAppTbl", 20) == 0,
-                  "strncmp(CS_AppData.ResTablesTblPtr[0].Name, 'CS.ResAppTbl', 20) == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.TablesCSState == 99, "CS_AppData.HkPacket.Payload.TablesCSState == 99");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewTablesDefinitionTable_Test_StateEmptyNoValidEntries(void)
-{
-    int32 strCmpResult;
-    char  ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "CS Tables Table: No valid entries in the table");
-
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = CS_STATE_EMPTY;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr == NULL, "CS_AppData.EepResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.MemResTablesTblPtr == NULL, "CS_AppData.MemResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.AppResTablesTblPtr == NULL, "CS_AppData.AppResTablesTblPtr == NULL");
-    UtAssert_True(CS_AppData.TblResTablesTblPtr == NULL, "CS_AppData.TblResTablesTblPtr == NULL");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].State == CS_STATE_EMPTY,
-                  "CS_AppData.ResTablesTblPtr[0].State == CS_STATE_EMPTY");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComputedYet == false,
-                  "CS_AppData.ResTablesTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResTablesTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].ByteOffset == 0, "CS_AppData.ResTablesTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResTablesTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].StartAddress == 0, "CS_AppData.ResTablesTblPtr[0].StartAddress == 0");
-
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].TblHandle == CFE_TBL_BAD_TABLE_HANDLE,
-                  "CS_AppData.ResTablesTblPtr[0].TblHandle == CFE_TBL_BAD_TABLE_HANDLE");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].IsCSOwner == false, "CS_AppData.ResTablesTblPtr[0].IsCSOwner == false");
-    UtAssert_True(CS_AppData.ResTablesTblPtr[0].Name[0] == 0, "CS_AppData.ResTablesTblPtr[0].Name[0] == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.TablesCSState == 99, "CS_AppData.HkPacket.Payload.TablesCSState == 99");
-
+    /* Test case for:
+     * void CS_ProcessNewTablesDefinitionTable(CS_TableWrapper_t *tw);
+     */
+
+    CS_TableWrapper_t *          tw;
+    CS_Res_Tables_Table_Entry_t *ResultsEntry;
+
+    /* path where all entries are empty */
+    tw = &CS_AppData.Tbl[CS_ChecksumType_TABLES_TABLE];
+    UtAssert_VOIDCALL(CS_ProcessNewTablesDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_PROCESS_TABLES_NO_ENTRIES_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
+    /* path where some entries not empty, table names only */
+    ResultsEntry = tw->ResAddr;
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[0].Name, "UT0");
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[1].Name, "UT1");
+    UtAssert_VOIDCALL(CS_ProcessNewTablesDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
+    UtAssert_BOOL_FALSE(ResultsEntry->IsCSOwner);
 
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
+    /* Where ResultsEntry is null */
+    CS_Test_ResetEventCheck();
+    UT_SetDeferredRetcode(UT_KEY(CS_GetResEntryAddr), 1, 0);
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[0].Name, "UT0");
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[1].Name, "UT1");
+    UtAssert_VOIDCALL(CS_ProcessNewTablesDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_PROCESS_TABLES_NO_ENTRIES_INF_EID);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
+    /* Where DefEntry is null */
+    CS_Test_ResetEventCheck();
+    UT_SetDeferredRetcode(UT_KEY(CS_GetDefEntryAddr), 1, 0);
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[0].Name, "UT0");
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[1].Name, "UT1");
+    UtAssert_VOIDCALL(CS_ProcessNewTablesDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_PROCESS_TABLES_NO_ENTRIES_INF_EID);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
+    /* path where some entries not empty, qualified table names */
+    ResultsEntry = tw->ResAddr;
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[0].Name, "UT.UT0");
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[1].Name, "XY.UT1");
+    UtAssert_VOIDCALL(CS_ProcessNewTablesDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
+    UtAssert_BOOL_FALSE(ResultsEntry->IsCSOwner);
+
+    /* path where some entries not empty, invalid table names */
+    ResultsEntry = tw->ResAddr;
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_ENABLED;
+    memset(CS_AppData.DefaultTablesDefTable[0].Name, 'x', sizeof(CS_AppData.DefaultTablesDefTable[0].Name));
+    CS_AppData.DefaultTablesDefTable[0].Name[sizeof(CS_AppData.DefaultTablesDefTable[0].Name) - 1] = '.';
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_DISABLED;
+    memset(CS_AppData.DefaultTablesDefTable[1].Name, 'y', sizeof(CS_AppData.DefaultTablesDefTable[1].Name));
+    CS_AppData.DefaultTablesDefTable[1].Name[0] = '.';
+    UtAssert_VOIDCALL(CS_ProcessNewTablesDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
+    UtAssert_BOOL_FALSE(ResultsEntry->IsCSOwner);
+
+    /* path where matches a CS Def table */
+    UT_SetDeferredRetcode(UT_KEY(CS_CheckDefTableNameMatch), 1, true);
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[0].Name, "UT.UT0");
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[1].Name, "XY.UT1");
+    UtAssert_VOIDCALL(CS_ProcessNewTablesDefinitionTable(tw));
+    UtAssert_BOOL_TRUE(ResultsEntry->IsCSOwner);
+
+    /* path where matches a CS Res table */
+    UT_SetDeferredRetcode(UT_KEY(CS_CheckResTableNameMatch), 1, true);
+    CS_AppData.DefaultTablesDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[0].Name, "UT.UT0");
+    CS_AppData.DefaultTablesDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultTablesDefTable[1].Name, "XY.UT1");
+    UtAssert_VOIDCALL(CS_ProcessNewTablesDefinitionTable(tw));
+    UtAssert_BOOL_TRUE(ResultsEntry->IsCSOwner);
 }
 
-void CS_ProcessNewTablesDefinitionTable_Test_LimitApplicationNameLength(void)
+void Test_CS_ProcessNewAppDefinitionTable(void)
 {
-    uint16     i;
-    const char AppNameX[] = "X";
+    /* Test case for:
+     * void CS_ProcessNewAppDefinitionTable(CS_TableWrapper_t *tw);
+     */
+    CS_TableWrapper_t *tw;
 
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    /* String name chosen to be of length OS_MAX_API_NAME in order to satisfy condition "AppNameIndex ==
-     * OS_MAX_API_NAME" */
-    /* If intended branch is reached, name length will be truncated to length OS_MAX_API_NAME - 1 */
-    for (i = 0; i <= OS_MAX_API_NAME; i++)
-    {
-        strncat(CS_AppData.DefTablesTblPtr[0].Name, "x", OS_MAX_API_NAME);
-    }
-
-    strncat(CS_AppData.DefTablesTblPtr[0].Name, ".DefEepromTbl", OS_MAX_API_NAME);
-
-    CS_AppData.DefEepromTableHandle = 11;
-
-    /* Sets AppName to string of x's of length OS_MAX_API_NAME */
-    UT_SetDataBuffer(UT_KEY(CFE_ES_GetAppName), (uint8 *)AppNameX, sizeof(AppNameX), false);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    /* Note: This test is a special case where we're only interested in seeing that one branch was taken: "if
-     * (AppNameIndex == OS_MAX_API_NAME)" */
-    /* If branch was taken, line "CS_AppData.EepResTablesTblPtr = ResultsEntry" will not be reached, and so the
-     * following assert will pass */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr != CS_AppData.ResTablesTblPtr,
-                  "CS_AppData.EepResTablesTblPtr != CS_AppData.ResTablesTblPtr");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewTablesDefinitionTable_Test_LimitTableNameLength(void)
-{
-    uint16 i;
-
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    strncat(CS_AppData.DefTablesTblPtr[0].Name, "CS.", CFE_TBL_MAX_FULL_NAME_LEN);
-
-    /* String name chosen to be of length CFE_TBL_MAX_FULL_NAME_LEN in order to satisfy condition "TableNameIndex ==
-     * CFE_TBL_MAX_FULL_NAME_LEN" */
-    /* If intended branch is reached, name length will be truncated to length CFE_TBL_MAX_FULL_NAME_LEN - 1 */
-    for (i = 0; i <= CFE_TBL_MAX_FULL_NAME_LEN; i++)
-    {
-        strncat(CS_AppData.DefTablesTblPtr[0].Name, "x", CFE_TBL_MAX_FULL_NAME_LEN);
-    }
-
-    CS_AppData.DefEepromTableHandle = 11;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    /* Note: This test is a special case where we're only interested in seeing that one branch was taken: "if
-     * (TableNameIndex == CFE_TBL_MAX_FULL_NAME_LEN)" */
-    /* If branch was taken, line "CS_AppData.EepResTablesTblPtr = ResultsEntry" will not be reached, and so the
-     * following assert will pass */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr != CS_AppData.ResTablesTblPtr,
-                  "CS_AppData.EepResTablesTblPtr != CS_AppData.ResTablesTblPtr");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewTablesDefinitionTable_Test_MaxTableNameLength(void)
-{
-    uint16 i;
-
-    CS_AppData.HkPacket.Payload.TablesCSState = 99;
-    CS_AppData.DefTablesTblPtr[0].State       = 88;
-
-    strncat(CS_AppData.DefTablesTblPtr[0].Name, "CS", CFE_TBL_MAX_FULL_NAME_LEN);
-
-    /* String name chosen to be of length CFE_TBL_MAX_FULL_NAME_LEN in order to satisfy condition "TableNameIndex ==
-     * CFE_TBL_MAX_FULL_NAME_LEN" */
-    /* If intended branch is reached, name length will be truncated to length CFE_TBL_MAX_FULL_NAME_LEN - 1 */
-    for (i = 0; i <= CFE_TBL_MAX_FULL_NAME_LEN + 1; i++)
-    {
-        strncat(CS_AppData.DefTablesTblPtr[0].Name, "x", CFE_TBL_MAX_FULL_NAME_LEN);
-    }
-
-    CS_AppData.DefEepromTableHandle = 11;
-
-    /* Sets AppName to "CS" */
-    UT_SetHandlerFunction(UT_KEY(CFE_ES_GetAppName), CS_TABLE_PROCESSING_TEST_CFE_ES_GetAppNameHandler1, NULL);
-
-    /* Execute the function being tested */
-    CS_ProcessNewTablesDefinitionTable(CS_AppData.DefTablesTblPtr, CS_AppData.ResTablesTblPtr);
-
-    /* Verify results */
-    /* Note: This test is a special case where we're only interested in seeing that one branch was taken: "if
-     * (TableNameIndex == CFE_TBL_MAX_FULL_NAME_LEN)" */
-    /* If branch was taken, line "CS_AppData.EepResTablesTblPtr = ResultsEntry" will not be reached, and so the
-     * following assert will pass */
-    UtAssert_True(CS_AppData.EepResTablesTblPtr != CS_AppData.ResTablesTblPtr,
-                  "CS_AppData.EepResTablesTblPtr != CS_AppData.ResTablesTblPtr");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewAppDefinitionTable_Test_Nominal(void)
-{
-    CS_AppData.HkPacket.Payload.AppCSState = 99;
-    CS_AppData.DefAppTblPtr[0].State       = 88;
-
-    strncpy(CS_AppData.DefAppTblPtr[0].Name, "name", 20);
-
-    /* Execute the function being tested */
-    CS_ProcessNewAppDefinitionTable(CS_AppData.DefAppTblPtr, CS_AppData.ResAppTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].State == 88, "CS_AppData.ResAppTblPtr[0].State == 88");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].ComputedYet == false, "CS_AppData.ResAppTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResAppTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].ComparisonValue == 0, "CS_AppData.ResAppTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].ByteOffset == 0, "CS_AppData.ResAppTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResAppTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].StartAddress == 0, "CS_AppData.ResAppTblPtr[0].StartAddress == 0");
-    UtAssert_True(strncmp(CS_AppData.ResAppTblPtr[0].Name, "name", 20) == 0,
-                  "strncmp(CS_AppData.ResAppTblPtr[0].Name, 'name', 20) == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.AppCSState == 99, "CS_AppData.HkPacket.Payload.AppCSState == 99");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_ProcessNewAppDefinitionTable_Test_StateEmptyNoValidEntries(void)
-{
-    int32 strCmpResult;
-    char  ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "CS Apps Table: No valid entries in the table");
-
-    CS_AppData.HkPacket.Payload.AppCSState = 99;
-    CS_AppData.DefAppTblPtr[0].State       = CS_STATE_EMPTY;
-
-    /* Execute the function being tested */
-    CS_ProcessNewAppDefinitionTable(CS_AppData.DefAppTblPtr, CS_AppData.ResAppTblPtr);
-
-    /* Verify results */
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].State == CS_STATE_EMPTY,
-                  "CS_AppData.ResAppTblPtr[0].State == CS_STATE_EMPTY");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].ComputedYet == false, "CS_AppData.ResAppTblPtr[0].ComputedYet == false");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].NumBytesToChecksum == 0,
-                  "CS_AppData.ResAppTblPtr[0].NumBytesToChecksum == 0");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].ComparisonValue == 0, "CS_AppData.ResAppTblPtr[0].ComparisonValue == 0");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].ByteOffset == 0, "CS_AppData.ResAppTblPtr[0].ByteOffset == 0");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].TempChecksumValue == 0,
-                  "CS_AppData.ResAppTblPtr[0].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].StartAddress == 0, "CS_AppData.ResAppTblPtr[0].StartAddress == 0");
-    UtAssert_True(CS_AppData.ResAppTblPtr[0].Name[0] == 0, "CS_AppData.ResAppTblPtr[0].Name[0] == 0");
-
-    UtAssert_True(CS_AppData.HkPacket.Payload.AppCSState == 99, "CS_AppData.HkPacket.Payload.AppCSState == 99");
-
+    /* path where all entries are empty */
+    tw = &CS_AppData.Tbl[CS_ChecksumType_APP_TABLE];
+    UtAssert_VOIDCALL(CS_ProcessNewAppDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_PROCESS_APP_NO_ENTRIES_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
+    /* path where some entries not empty */
+    CS_Test_ResetEventCheck();
+    CS_AppData.DefaultAppDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[0].Name, "UT0");
+    CS_AppData.DefaultAppDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[1].Name, "UT1");
+    UtAssert_VOIDCALL(CS_ProcessNewAppDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
 
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
+    /* Where ResultsEntry is null */
+    CS_Test_ResetEventCheck();
+    UT_SetDeferredRetcode(UT_KEY(CS_GetResEntryAddr), 1, 0);
+    CS_AppData.DefaultAppDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[0].Name, "UT0");
+    CS_AppData.DefaultAppDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[1].Name, "UT1");
+    UtAssert_VOIDCALL(CS_ProcessNewAppDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_PROCESS_APP_NO_ENTRIES_INF_EID);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
+    /* Where DefEntry is null */
+    CS_Test_ResetEventCheck();
+    UT_SetDeferredRetcode(UT_KEY(CS_GetDefEntryAddr), 1, 0);
+    CS_AppData.DefaultAppDefTable[0].State = CS_ChecksumState_ENABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[0].Name, "UT0");
+    CS_AppData.DefaultAppDefTable[1].State = CS_ChecksumState_DISABLED;
+    strcpy(CS_AppData.DefaultAppDefTable[1].Name, "UT1");
+    UtAssert_VOIDCALL(CS_ProcessNewAppDefinitionTable(tw));
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_PROCESS_APP_NO_ENTRIES_INF_EID);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
 }
 
-void CS_TableInit_Test_DefaultDefinitionTableLoadErrorEEPROM(void)
+void Test_CS_TableInit(void)
 {
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    int32            strCmpResult;
-    char             ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS received error 0x%%08X initializing Definition table for %%s");
-
-    /* Set to cause load from the default tables */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), -1);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefEepromTblPtr,
-                          (void **)&CS_AppData.ResEepromTblPtr, CS_EEPROM_TABLE, CS_DEF_EEPROM_TABLE_NAME,
-                          CS_RESULTS_EEPROM_TABLE_NAME, CS_MAX_NUM_EEPROM_TABLE_ENTRIES, CS_DEF_EEPROM_TABLE_FILENAME,
-                          &CS_AppData.DefaultEepromDefTable, sizeof(CS_Def_EepromMemory_Table_Entry_t),
-                          sizeof(CS_Res_EepromMemory_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_INIT_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == -1, "Result == -1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_TableInit_Test_DefinitionTableGetAddressErrorEEPROM(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    int32            strCmpResult;
-    char             ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS received error 0x%%08X initializing Definition table for %%s");
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to fail condition "Result >= CFE_SUCCESS" after 2nd call to GetAddress */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, -1);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefEepromTblPtr,
-                          (void **)&CS_AppData.ResEepromTblPtr, CS_EEPROM_TABLE, CS_DEF_EEPROM_TABLE_NAME,
-                          CS_RESULTS_EEPROM_TABLE_NAME, CS_MAX_NUM_EEPROM_TABLE_ENTRIES, CS_DEF_EEPROM_TABLE_FILENAME,
-                          &CS_AppData.DefaultEepromDefTable, sizeof(CS_Def_EepromMemory_Table_Entry_t),
-                          sizeof(CS_Res_EepromMemory_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_INIT_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == -1, "Result == -1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_TableInit_Test_DefinitionTableGetAddressErrorMemory(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    int32            strCmpResult;
-    char             ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS received error 0x%%08X initializing Definition table for %%s");
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to fail condition "Result >= CFE_SUCCESS" after 2nd call to GetAddress */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, -1);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefMemoryTblPtr,
-                          (void **)&CS_AppData.ResMemoryTblPtr, CS_MEMORY_TABLE, CS_DEF_MEMORY_TABLE_NAME,
-                          CS_RESULTS_MEMORY_TABLE_NAME, CS_MAX_NUM_MEMORY_TABLE_ENTRIES, CS_DEF_MEMORY_TABLE_FILENAME,
-                          &CS_AppData.DefaultMemoryDefTable, sizeof(CS_Def_EepromMemory_Table_Entry_t),
-                          sizeof(CS_Res_EepromMemory_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_INIT_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == -1, "Result == -1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_TableInit_Test_DefinitionTableGetAddressErrorTables(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    int32            strCmpResult;
-    char             ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS received error 0x%%08X initializing Definition table for %%s");
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to fail condition "Result >= CFE_SUCCESS" after 2nd call to GetAddress */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, -1);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefTablesTblPtr,
-                          (void **)&CS_AppData.ResTablesTblPtr, CS_TABLES_TABLE, CS_DEF_TABLES_TABLE_NAME,
-                          CS_RESULTS_TABLES_TABLE_NAME, CS_MAX_NUM_TABLES_TABLE_ENTRIES, CS_DEF_TABLES_TABLE_FILENAME,
-                          &CS_AppData.DefaultTablesDefTable, sizeof(CS_Def_Tables_Table_Entry_t),
-                          sizeof(CS_Res_Tables_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_INIT_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == -1, "Result == -1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_TableInit_Test_DefinitionTableGetAddressErrorApps(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    int32            strCmpResult;
-    char             ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "CS received error 0x%%08X initializing Definition table for %%s");
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to fail condition "Result >= CFE_SUCCESS" after 2nd call to GetAddress */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, -1);
-
-    /* Execute the function being tested */
-    Result =
-        CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefAppTblPtr,
-                     (void **)&CS_AppData.ResAppTblPtr, CS_APP_TABLE, CS_DEF_APP_TABLE_NAME, CS_RESULTS_APP_TABLE_NAME,
-                     CS_MAX_NUM_APP_TABLE_ENTRIES, CS_DEF_APP_TABLE_FILENAME, &CS_AppData.DefaultAppDefTable,
-                     sizeof(CS_Def_App_Table_Entry_t), sizeof(CS_Res_App_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_INIT_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == -1, "Result == -1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_TableInit_Test_EepromTableAndNotLoadedFromMemory(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to satisfy condition "Result == CFE_TBL_INFO_UPDATED" */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, CFE_TBL_INFO_UPDATED);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefEepromTblPtr,
-                          (void **)&CS_AppData.ResEepromTblPtr, CS_EEPROM_TABLE, CS_DEF_EEPROM_TABLE_NAME,
-                          CS_RESULTS_EEPROM_TABLE_NAME, CS_MAX_NUM_EEPROM_TABLE_ENTRIES, CS_DEF_EEPROM_TABLE_FILENAME,
-                          &CS_AppData.DefaultEepromDefTable, sizeof(CS_Def_EepromMemory_Table_Entry_t),
-                          sizeof(CS_Res_EepromMemory_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_True(Result == CFE_SUCCESS, "Result == CFE_SUCCESS");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 error message we don't care about in this test */
-}
-
-void CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterResultsTableRegisterError(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-
-    /* Set to satisfy condition "ResultFromLoad != CFE_SUCCESS" */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Register), 1, -1);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_GetAddress), CFE_SUCCESS);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefEepromTblPtr,
-                          (void **)&CS_AppData.ResEepromTblPtr, CS_EEPROM_TABLE, CS_DEF_EEPROM_TABLE_NAME,
-                          CS_RESULTS_EEPROM_TABLE_NAME, CS_MAX_NUM_EEPROM_TABLE_ENTRIES, CS_DEF_EEPROM_TABLE_FILENAME,
-                          &CS_AppData.DefaultEepromDefTable, sizeof(CS_Def_EepromMemory_Table_Entry_t),
-                          sizeof(CS_Res_EepromMemory_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(Result, -1);
+    /* Test case for:
+     * CFE_Status_t CS_TableInit(CS_TableWrapper_t *tw, const char *DefinitionTableFileName, CFE_TBL_CallbackFuncPtr_t
+     * CallBackFunction);
+     */
+    CS_TableWrapper_t *tw = &CS_AppData.Tbl[CS_ChecksumType_APP_TABLE];
+
+    /* nominal */
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->DefAddr, sizeof(tw->DefAddr), false);
+    UtAssert_INT32_EQ(CS_TableInit(tw, "UT", NULL), CFE_SUCCESS);
+    UtAssert_STUB_COUNT(CFE_TBL_Register, 2);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
+
+    /* No filename */
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_Register));
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->DefAddr, sizeof(tw->DefAddr), false);
+    UtAssert_INT32_EQ(CS_TableInit(tw, NULL, NULL), CFE_SUCCESS);
+    UtAssert_STUB_COUNT(CFE_TBL_Register, 0);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
+
+    /* failure to register result table */
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_Register));
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Register), 1, -123);
+    UtAssert_INT32_EQ(CS_TableInit(tw, "UT", NULL), -123);
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_INIT_ERR_EID);
-}
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-void CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterResultsTableGetAddressError(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* On 1st call, return -1 to set LoadedFromMemory.  On 2nd call, return CFE_SUCCESS to prevent error */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 1, -1);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefEepromTblPtr,
-                          (void **)&CS_AppData.ResEepromTblPtr, CS_EEPROM_TABLE, CS_DEF_EEPROM_TABLE_NAME,
-                          CS_RESULTS_EEPROM_TABLE_NAME, CS_MAX_NUM_EEPROM_TABLE_ENTRIES, CS_DEF_EEPROM_TABLE_FILENAME,
-                          &CS_AppData.DefaultEepromDefTable, sizeof(CS_Def_EepromMemory_Table_Entry_t),
-                          sizeof(CS_Res_EepromMemory_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(Result, -1);
+    /* failure to register definition table */
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_Register));
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Register), 2, -123);
+    UtAssert_INT32_EQ(CS_TableInit(tw, "UT", NULL), -123);
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_INIT_ERR_EID);
-}
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-void CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterDefinitionTableRegisterError(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-
-    /* Set to satisfy condition "ResultFromLoad != CFE_SUCCESS" on 2nd call to TBL_Register */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Register), 2, -1);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_GetAddress), CFE_SUCCESS);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefEepromTblPtr,
-                          (void **)&CS_AppData.ResEepromTblPtr, CS_EEPROM_TABLE, CS_DEF_EEPROM_TABLE_NAME,
-                          CS_RESULTS_EEPROM_TABLE_NAME, CS_MAX_NUM_EEPROM_TABLE_ENTRIES, CS_DEF_EEPROM_TABLE_FILENAME,
-                          &CS_AppData.DefaultEepromDefTable, sizeof(CS_Def_EepromMemory_Table_Entry_t),
-                          sizeof(CS_Res_EepromMemory_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(Result, -1);
+    /* failure to get address result table */
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_Register));
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 1, -123);
+    UtAssert_INT32_EQ(CS_TableInit(tw, "UT", NULL), -123);
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_INIT_ERR_EID);
-}
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-void CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterDefinitionTableFileLoadError(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
+    /* failure to register definition table */
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_Register));
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, -123);
+    UtAssert_INT32_EQ(CS_TableInit(tw, "UT", NULL), -123);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_INIT_ERR_EID);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-    /* So this can detect the switch to DISABLED */
-    CS_AppData.HkPacket.Payload.EepromCSState = CS_STATE_ENABLED;
-
-    /* On 1st call, return -1 to satisfy condition "ResultFromLoad != CFE_SUCCESS".  On 2nd call, return CFE_SUCCESS to
-     * prevent error */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, -1);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_GetAddress), CFE_SUCCESS);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefEepromTblPtr,
-                          (void **)&CS_AppData.ResEepromTblPtr, CS_EEPROM_TABLE, CS_DEF_EEPROM_TABLE_NAME,
-                          CS_RESULTS_EEPROM_TABLE_NAME, CS_MAX_NUM_EEPROM_TABLE_ENTRIES, CS_DEF_EEPROM_TABLE_FILENAME,
-                          &CS_AppData.DefaultEepromDefTable, sizeof(CS_Def_EepromMemory_Table_Entry_t),
-                          sizeof(CS_Res_EepromMemory_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.EepromCSState, CS_STATE_DISABLED);
-    UtAssert_INT32_EQ(Result, CFE_SUCCESS);
+    /* failure to load definition table from file, but memory succeeds */
+    CS_Test_ResetEventCheck();
+    *tw->GlobalState = CS_ChecksumState_ENABLED;
+    UT_ResetState(UT_KEY(CFE_TBL_Register));
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->DefAddr, sizeof(tw->DefAddr), false);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, -456);
+    UtAssert_INT32_EQ(CS_TableInit(tw, "UT", NULL), CFE_SUCCESS);
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
-}
+    UtAssert_UINT8_EQ(*tw->GlobalState, CS_ChecksumState_DISABLED);
 
-void CS_TableInit_Test_MemoryTableAndNotLoadedFromMemory(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-
-    /* So this can detect a switch */
-    CS_AppData.HkPacket.Payload.MemoryCSState = CS_STATE_ENABLED;
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to satisfy condition "Result == CFE_TBL_INFO_UPDATED" */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, CFE_TBL_INFO_UPDATED);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefMemoryTblPtr,
-                          (void **)&CS_AppData.ResMemoryTblPtr, CS_MEMORY_TABLE, CS_DEF_MEMORY_TABLE_NAME,
-                          CS_RESULTS_MEMORY_TABLE_NAME, CS_MAX_NUM_MEMORY_TABLE_ENTRIES, CS_DEF_MEMORY_TABLE_FILENAME,
-                          &CS_AppData.DefaultMemoryDefTable, sizeof(CS_Def_EepromMemory_Table_Entry_t),
-                          sizeof(CS_Res_EepromMemory_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.MemoryCSState, CS_STATE_ENABLED);
-    UtAssert_INT32_EQ(Result, CFE_SUCCESS);
-
-    /* Note this may generate an event in the new table processing, checked in other test */
-}
-
-void CS_TableInit_Test_MemoryTableAndLoadedFromMemory(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-
-    /* So this can detect a switch */
-    CS_AppData.HkPacket.Payload.MemoryCSState = CS_STATE_ENABLED;
-
-    /* First call fails so it proceeds to load from memory */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, -1);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_GetAddress), CFE_SUCCESS);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefMemoryTblPtr,
-                          (void **)&CS_AppData.ResMemoryTblPtr, CS_MEMORY_TABLE, CS_DEF_MEMORY_TABLE_NAME,
-                          CS_RESULTS_MEMORY_TABLE_NAME, CS_MAX_NUM_MEMORY_TABLE_ENTRIES, CS_DEF_MEMORY_TABLE_FILENAME,
-                          &CS_AppData.DefaultMemoryDefTable, sizeof(CS_Def_EepromMemory_Table_Entry_t),
-                          sizeof(CS_Res_EepromMemory_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.MemoryCSState, CS_STATE_DISABLED);
-    UtAssert_INT32_EQ(Result, CFE_SUCCESS);
+    /* same but when there is no global staste */
+    CS_Test_ResetEventCheck();
+    tw->GlobalState = NULL;
+    UT_ResetState(UT_KEY(CFE_TBL_Register));
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->DefAddr, sizeof(tw->DefAddr), false);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, -456);
+    UtAssert_INT32_EQ(CS_TableInit(tw, "UT", NULL), CFE_SUCCESS);
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
+
+    /* failure to load definition table from anything */
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_Register));
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->DefAddr, sizeof(tw->DefAddr), false);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, -456);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, -456);
+    UtAssert_INT32_EQ(CS_TableInit(tw, "UT", NULL), -456);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_INIT_ERR_EID);
+    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 }
 
-void CS_TableInit_Test_AppTableAndNotLoadedFromMemory(void)
+void Test_CS_HandleTableUpdate(void)
 {
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
+    /* Test case for:
+     * CFE_Status_t CS_HandleTableUpdate(CS_TableWrapper_t *tw);
+     */
+    CS_Res_Tables_Table_Entry_t *ResultsEntry;
+    CS_TableWrapper_t *          tw;
 
-    /* So this can detect a switch */
-    CS_AppData.HkPacket.Payload.AppCSState = CS_STATE_ENABLED;
+    tw = &CS_AppData.Tbl[CS_ChecksumType_TABLES_TABLE];
 
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to satisfy condition "Result == CFE_TBL_INFO_UPDATED" */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, CFE_TBL_INFO_UPDATED);
-
-    /* Execute the function being tested */
-    Result =
-        CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefAppTblPtr,
-                     (void **)&CS_AppData.ResAppTblPtr, CS_APP_TABLE, CS_DEF_APP_TABLE_NAME, CS_RESULTS_APP_TABLE_NAME,
-                     CS_MAX_NUM_APP_TABLE_ENTRIES, CS_DEF_APP_TABLE_FILENAME, &CS_AppData.DefaultAppDefTable,
-                     sizeof(CS_Def_App_Table_Entry_t), sizeof(CS_Res_App_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.AppCSState, CS_STATE_ENABLED);
-    UtAssert_INT32_EQ(Result, CFE_SUCCESS);
-    /* Note this may generate an event in the new table processing, checked in other test */
-}
-
-void CS_TableInit_Test_AppTableAndLoadedFromMemory(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-
-    /* So this can detect a switch */
-    CS_AppData.HkPacket.Payload.AppCSState = CS_STATE_ENABLED;
-
-    /* Set to satisfy condition "ResultFromLoad != CFE_SUCCESS" */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, -1);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_GetAddress), CFE_SUCCESS);
-
-    /* Execute the function being tested */
-    Result =
-        CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefAppTblPtr,
-                     (void **)&CS_AppData.ResAppTblPtr, CS_APP_TABLE, CS_DEF_APP_TABLE_NAME, CS_RESULTS_APP_TABLE_NAME,
-                     CS_MAX_NUM_APP_TABLE_ENTRIES, CS_DEF_APP_TABLE_FILENAME, &CS_AppData.DefaultAppDefTable,
-                     sizeof(CS_Def_App_Table_Entry_t), sizeof(CS_Res_App_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.AppCSState, CS_STATE_DISABLED);
-    UtAssert_INT32_EQ(Result, CFE_SUCCESS);
+    /* nominal */
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->DefAddr, sizeof(tw->DefAddr), false);
+    UtAssert_INT32_EQ(CS_HandleTableUpdate(tw), CFE_SUCCESS);
     UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
-}
 
-void CS_TableInit_Test_TablesTableAndNotLoadedFromMemory(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-
-    /* So this can detect a switch */
-    CS_AppData.HkPacket.Payload.TablesCSState = CS_STATE_ENABLED;
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to satisfy condition "Result == CFE_TBL_INFO_UPDATED" */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, CFE_TBL_INFO_UPDATED);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefTablesTblPtr,
-                          (void **)&CS_AppData.ResTablesTblPtr, CS_TABLES_TABLE, CS_DEF_TABLES_TABLE_NAME,
-                          CS_RESULTS_TABLES_TABLE_NAME, CS_MAX_NUM_TABLES_TABLE_ENTRIES, CS_DEF_TABLES_TABLE_FILENAME,
-                          &CS_AppData.DefaultTablesDefTable, sizeof(CS_Def_Tables_Table_Entry_t),
-                          sizeof(CS_Res_Tables_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.TablesCSState, CS_STATE_ENABLED);
-    UtAssert_INT32_EQ(Result, CFE_SUCCESS);
-    /* Note this may generate an event in the new table processing, checked in other test */
-}
-
-void CS_TableInit_Test_TablesTableAndLoadedFromMemory(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-
-    /* So this can detect a switch */
-    CS_AppData.HkPacket.Payload.TablesCSState = CS_STATE_ENABLED;
-
-    /* Set to satisfy condition "ResultFromLoad != CFE_SUCCESS" */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, -1);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_GetAddress), CFE_SUCCESS);
-
-    /* Execute the function being tested */
-    Result = CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefTablesTblPtr,
-                          (void **)&CS_AppData.ResTablesTblPtr, CS_TABLES_TABLE, CS_DEF_TABLES_TABLE_NAME,
-                          CS_RESULTS_TABLES_TABLE_NAME, CS_MAX_NUM_TABLES_TABLE_ENTRIES, CS_DEF_TABLES_TABLE_FILENAME,
-                          &CS_AppData.DefaultTablesDefTable, sizeof(CS_Def_Tables_Table_Entry_t),
-                          sizeof(CS_Res_Tables_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.TablesCSState, CS_STATE_DISABLED);
-    UtAssert_INT32_EQ(Result, CFE_SUCCESS);
-    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
-}
-
-void CS_TableInit_Test_DefaultAndLoadedFromMemory(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-
-    /* Note this is not really a valid case; this only covers a possible path
-     * where the table ID value is not one of the expected values.  It exists
-     * to satisfy branch coverage */
-
-    /* Set to satisfy condition "ResultFromLoad != CFE_SUCCESS" */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_Load), 1, -1);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_Load), CFE_SUCCESS);
-
-    /* Set to prevent unintended errors */
-    UT_SetDefaultReturnValue(UT_KEY(CFE_TBL_GetAddress), CFE_SUCCESS);
-
-    /* Execute the function being tested */
-    Result =
-        CS_TableInit(&DefinitionTableHandle, &ResultsTableHandle, (void **)&CS_AppData.DefTablesTblPtr,
-                     (void **)&CS_AppData.ResTablesTblPtr, 99, CS_DEF_TABLES_TABLE_NAME, CS_RESULTS_TABLES_TABLE_NAME,
-                     CS_MAX_NUM_TABLES_TABLE_ENTRIES, CS_DEF_TABLES_TABLE_FILENAME, &CS_AppData.DefaultTablesDefTable,
-                     sizeof(CS_Def_Tables_Table_Entry_t), sizeof(CS_Res_Tables_Table_Entry_t), NULL);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(Result, CFE_SUCCESS);
-    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
-}
-
-void CS_HandleTableUpdate_Test_ProcessNewTablesDefinitionTable(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_TABLES_TABLE;
-
-    void *DefTblPtr    = CS_AppData.DefTablesTblPtr;
-    void *ResultTblPtr = CS_AppData.ResTablesTblPtr;
-
-    /* On 1st call, return CFE_SUCCESS to prevent error.  On 2nd call, return UT_CFE_TBL_GETADDRESS_INDEX to satisfy
-     * condition "Result == CFE_TBL_INFO_UPDATED". */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, CFE_TBL_INFO_UPDATED);
-
-    CS_AppData.ResTablesTblPtr[0].TblHandle = 99;
-    CS_AppData.ResTablesTblPtr[0].IsCSOwner = false;
-
-    /* Execute the function being tested */
-    Result = CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table,
-                                  CS_MAX_NUM_TABLES_TABLE_ENTRIES);
-
-    /* Verify results */
-    UtAssert_True(Result == CFE_SUCCESS, "Result == CFE_SUCCESS");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 event message we don't care about in this test */
-}
-
-void CS_HandleTableUpdate_Test_ProcessNewAppDefinitionTable(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_APP_TABLE;
-    uint16           NumEntries            = 0;
-
-    void *DefTblPtr    = CS_AppData.DefAppTblPtr;
-    void *ResultTblPtr = CS_AppData.ResAppTblPtr;
-
-    /* On 1st call, return CFE_SUCCESS to prevent error.  On 2nd call, return UT_CFE_TBL_GETADDRESS_INDEX to satisfy
-     * condition "Result == CFE_TBL_INFO_UPDATED". */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, CFE_TBL_INFO_UPDATED);
-
-    /* Execute the function being tested */
-    Result =
-        CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table, NumEntries);
-
-    /* Verify results */
-    UtAssert_True(Result == CFE_SUCCESS, "Result == CFE_SUCCESS");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 error message we don't care about in this test */
-}
-
-void CS_HandleTableUpdate_Test_ProcessNewEepromMemoryDefinitionTable(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_EEPROM_TABLE;
-    uint16           NumEntries            = CS_MAX_NUM_EEPROM_TABLE_ENTRIES;
-
-    void *DefTblPtr    = CS_AppData.DefEepromTblPtr;
-    void *ResultTblPtr = CS_AppData.ResEepromTblPtr;
-
-    /* On 1st call, return CFE_SUCCESS to prevent error.  On 2nd call, return UT_CFE_TBL_GETADDRESS_INDEX to satisfy
-     * condition "Result == CFE_TBL_INFO_UPDATED". */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, CFE_TBL_INFO_UPDATED);
-
-    /* Execute the function being tested */
-    Result =
-        CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table, NumEntries);
-
-    /* Verify results */
-    UtAssert_True(Result == CFE_SUCCESS, "Result == CFE_SUCCESS");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 error message we don't care about in this test */
-}
-
-void CS_HandleTableUpdate_Test_ResultsTableGetAddressErrorEEPROM(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_EEPROM_TABLE;
-    uint16           NumEntries            = 0;
-    int32            strCmpResult;
-    char             ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH * 2];
-
-    void *DefTblPtr    = CS_AppData.DefEepromTblPtr;
-    void *ResultTblPtr = CS_AppData.ResEepromTblPtr;
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH * 2,
-             "CS had problems updating table. Res Release: 0x%%08X Def Release:0x%%08X Res Manage:0x%%08X Def Manage: "
-             "0x%%08X Get:0x%%08X for table %%s");
-
-    /* Set to generate error message CS_TBL_UPDATE_ERR_EID */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 1, -1);
-
-    /* Execute the function being tested */
-    Result =
-        CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table, NumEntries);
-
-    /* Verify results */
+    /* failure to get result address */
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 1, -123);
+    UtAssert_INT32_EQ(CS_HandleTableUpdate(tw), -123);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_UPDATE_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-    /* Ignore last char in case it was truncated */
-    strCmpResult =
-        strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH - 1);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == -1, "Result == -1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 error message we don't care about in this test */
-}
-
-void CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorEEPROM(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_EEPROM_TABLE;
-    uint16           NumEntries            = 0;
-    int32            strCmpResult;
-    char             ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH * 2];
-
-    void *DefTblPtr    = NULL;
-    void *ResultTblPtr = NULL;
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH * 2,
-             "CS had problems updating table. Res Release: 0x%%08X Def Release:0x%%08X Res Manage:0x%%08X Def Manage: "
-             "0x%%08X Get:0x%%08X for table %%s");
-
-    /* Set to generate error message CS_TBL_UPDATE_ERR_EID.  Also prevent issues by returning CFE_SUCCESS on all calls
-     * except the 2nd. */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, -1);
-
-    /* Execute the function being tested */
-    Result =
-        CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table, NumEntries);
-
-    /* Verify results */
+    /* failure to get definition address */
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, -123);
+    UtAssert_INT32_EQ(CS_HandleTableUpdate(tw), -123);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 1);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_UPDATE_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
 
-    /* Ignore last char in case it was truncated */
-    strCmpResult =
-        strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH - 1);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == -1, "Result == -1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 error message we don't care about in this test */
-}
-
-void CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorMemory(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_MEMORY_TABLE;
-    uint16           NumEntries            = 0;
-    int32            strCmpResult;
-    char             ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH * 2];
-
-    void *DefTblPtr    = CS_AppData.DefMemoryTblPtr;
-    void *ResultTblPtr = CS_AppData.ResMemoryTblPtr;
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH * 2,
-             "CS had problems updating table. Res Release: 0x%%08X Def Release:0x%%08X Res Manage:0x%%08X Def Manage: "
-             "0x%%08X Get:0x%%08X for table %%s");
-
-    /* Set to generate error message CS_TBL_UPDATE_ERR_EID.  Also prevent issues by returning CFE_SUCCESS on all calls
-     * except the 2nd. */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, -1);
-
-    /* Execute the function being tested */
-    Result =
-        CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table, NumEntries);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_UPDATE_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    /* Ignore last char in case it was truncated */
-    strCmpResult =
-        strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH - 1);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == -1, "Result == -1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 error message we don't care about in this test */
-}
-
-void CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorTables(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_TABLES_TABLE;
-    uint16           NumEntries            = 0;
-    int32            strCmpResult;
-    char             ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH * 2];
-
-    void *DefTblPtr    = CS_AppData.DefTablesTblPtr;
-    void *ResultTblPtr = CS_AppData.ResTablesTblPtr;
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH * 2,
-             "CS had problems updating table. Res Release: 0x%%08X Def Release:0x%%08X Res Manage:0x%%08X Def Manage: "
-             "0x%%08X Get:0x%%08X for table %%s");
-
-    /* Set to generate error message CS_TBL_UPDATE_ERR_EID.  Also prevent issues by returning CFE_SUCCESS on all calls
-     * except the 2nd. */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, -1);
-
-    /* Execute the function being tested */
-    Result =
-        CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table, NumEntries);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_UPDATE_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    /* Ignore last char in case it was truncated */
-    strCmpResult =
-        strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH - 1);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == -1, "Result == -1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 error message we don't care about in this test */
-}
-
-void CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorApps(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_APP_TABLE;
-    uint16           NumEntries            = 0;
-    int32            strCmpResult;
-    char             ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH * 2];
-
-    void *DefTblPtr    = CS_AppData.DefAppTblPtr;
-    void *ResultTblPtr = CS_AppData.ResAppTblPtr;
-
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH * 2,
-             "CS had problems updating table. Res Release: 0x%%08X Def Release:0x%%08X Res Manage:0x%%08X Def Manage: "
-             "0x%%08X Get:0x%%08X for table %%s");
-
-    /* Set to generate error message CS_TBL_UPDATE_ERR_EID.  Also prevent issues by returning CFE_SUCCESS on all calls
-     * except the 2nd. */
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, -1);
-
-    /* Execute the function being tested */
-    Result =
-        CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table, NumEntries);
-
-    /* Verify results */
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_TBL_UPDATE_ERR_EID);
-    UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
-
-    /* Ignore last char in case it was truncated */
-    strCmpResult =
-        strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH - 1);
-
-    UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(Result == -1, "Result == -1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 error message we don't care about in this test */
-}
-
-void CS_HandleTableUpdate_Test_BadTableHandle(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_TABLES_TABLE;
-
-    void *DefTblPtr    = CS_AppData.DefTablesTblPtr;
-    void *ResultTblPtr = CS_AppData.ResTablesTblPtr;
-
-    /* On 1st call, return CFE_SUCCESS to prevent error.  On 2nd call, return UT_CFE_TBL_GETADDRESS_INDEX to satisfy
-     * condition "Result == CFE_TBL_INFO_UPDATED". */
+    /* CFE_TBL_INFO_UPDATED on definition address, not the tables table */
+    tw = &CS_AppData.Tbl[CS_ChecksumType_APP_TABLE];
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->DefAddr, sizeof(tw->DefAddr), false);
     UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, CFE_TBL_INFO_UPDATED);
+    UtAssert_INT32_EQ(CS_HandleTableUpdate(tw), CFE_SUCCESS);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
 
-    CS_AppData.ResTablesTblPtr[0].TblHandle = CFE_TBL_BAD_TABLE_HANDLE;
-    CS_AppData.ResTablesTblPtr[0].IsCSOwner = true;
-
-    /* Execute the function being tested */
-    Result = CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table,
-                                  CS_MAX_NUM_TABLES_TABLE_ENTRIES);
-
-    /* Verify results */
-    UtAssert_True(Result == CFE_SUCCESS, "Result == CFE_SUCCESS");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 event message we don't care about in this test */
-}
-
-void CS_HandleTableUpdate_Test_CsOwner(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_TABLES_TABLE;
-
-    void *DefTblPtr    = CS_AppData.DefTablesTblPtr;
-    void *ResultTblPtr = CS_AppData.ResTablesTblPtr;
-
-    /* On 1st call, return CFE_SUCCESS to prevent error.  On 2nd call, return UT_CFE_TBL_GETADDRESS_INDEX to satisfy
-     * condition "Result == CFE_TBL_INFO_UPDATED". */
+    /* CFE_TBL_INFO_UPDATED on definition address, on the tables table, owned by CS */
+    tw           = &CS_AppData.Tbl[CS_ChecksumType_TABLES_TABLE];
+    ResultsEntry = tw->ResAddr;
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->DefAddr, sizeof(tw->DefAddr), false);
     UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, CFE_TBL_INFO_UPDATED);
+    ResultsEntry->TblHandleID = CFE_TBL_HANDLEID_C(CFE_ResourceId_FromInteger(15));
+    ResultsEntry->IsCSOwner   = true;
+    UtAssert_INT32_EQ(CS_HandleTableUpdate(tw), CFE_SUCCESS);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
+    UtAssert_STUB_COUNT(CFE_TBL_Unregister, 0);
 
-    CS_AppData.ResTablesTblPtr[0].TblHandle = 99;
-    CS_AppData.ResTablesTblPtr[0].IsCSOwner = true;
-
-    /* Execute the function being tested */
-    Result = CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table,
-                                  CS_MAX_NUM_TABLES_TABLE_ENTRIES);
-
-    /* Verify results */
-    UtAssert_True(Result == CFE_SUCCESS, "Result == CFE_SUCCESS");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
-                  call_count_CFE_EVS_SendEvent);
-    /* Generates 1 event message we don't care about in this test */
-}
-
-void CS_HandleTableUpdate_Test_GetAddressError(void)
-{
-    CFE_Status_t     Result;
-    CFE_TBL_Handle_t DefinitionTableHandle = 0;
-    CFE_TBL_Handle_t ResultsTableHandle    = 0;
-    uint16           Table                 = CS_TABLES_TABLE;
-
-    void *DefTblPtr    = CS_AppData.DefTablesTblPtr;
-    void *ResultTblPtr = CS_AppData.ResTablesTblPtr;
-
-    UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 1, 1);
-
-    CS_AppData.ResTablesTblPtr[0].TblHandle = 99;
-    CS_AppData.ResTablesTblPtr[0].IsCSOwner = true;
-
-    /* Execute the function being tested */
-    Result = CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table,
-                                  CS_MAX_NUM_TABLES_TABLE_ENTRIES);
-
-    /* Verify results */
-    UtAssert_True(Result == 1, "Result == 1");
-
-    call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
-
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
-                  call_count_CFE_EVS_SendEvent);
-}
-
-void CS_HandleTableUpdate_Test_InvalidTable(void)
-{
-    CFE_TBL_Handle_t DefinitionTableHandle = CFE_TBL_BAD_TABLE_HANDLE;
-    CFE_TBL_Handle_t ResultsTableHandle    = CFE_TBL_BAD_TABLE_HANDLE;
-    uint16           Table                 = CS_NUM_TABLES + 1;
-    uint32           Temp1;
-    uint32           Temp2;
-
-    void *DefTblPtr    = &Temp1;
-    void *ResultTblPtr = &Temp2;
-
+    /* CFE_TBL_INFO_UPDATED on definition address, on the tables table, not owned by CS */
+    CS_Test_ResetEventCheck();
+    UT_ResetState(UT_KEY(CFE_TBL_GetAddress));
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->ResAddr, sizeof(tw->ResAddr), false);
+    UT_SetDataBuffer(UT_KEY(CFE_TBL_GetAddress), &tw->DefAddr, sizeof(tw->DefAddr), false);
     UT_SetDeferredRetcode(UT_KEY(CFE_TBL_GetAddress), 2, CFE_TBL_INFO_UPDATED);
+    ResultsEntry->TblHandleID = CFE_TBL_HANDLEID_C(CFE_ResourceId_FromInteger(15));
+    ResultsEntry->IsCSOwner   = false;
+    UtAssert_INT32_EQ(CS_HandleTableUpdate(tw), CFE_SUCCESS);
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
+    UtAssert_STUB_COUNT(CFE_TBL_Unregister, 1);
+}
 
-    /* Execute the function being tested */
-    UtAssert_INT32_EQ(
-        CS_HandleTableUpdate(&DefTblPtr, &ResultTblPtr, DefinitionTableHandle, ResultsTableHandle, Table, 1),
-        CFE_SUCCESS);
+static void CS_UT_UpdateHandler(CS_TableWrapper_t *tw)
+{
+    UT_DEFAULT_IMPL(CS_UT_UpdateHandler);
+}
+
+void Test_CS_CallTableUpdateHandler(void)
+{
+    CS_TableWrapper_t *tw;
+
+    tw = &CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE];
+
+    /* nominal */
+    tw->UpdateHandler = CS_UT_UpdateHandler;
+    UtAssert_VOIDCALL(CS_CallTableUpdateHandler(tw));
+    UtAssert_STUB_COUNT(CS_UT_UpdateHandler, 1);
+
+    /* unset */
+    tw->UpdateHandler = NULL;
+    UtAssert_VOIDCALL(CS_CallTableUpdateHandler(tw));
+    UtAssert_STUB_COUNT(CS_UT_UpdateHandler, 1);
 }
 
 void UtTest_Setup(void)
 {
-    UtTest_Add(CS_ValidateEepromChecksumDefinitionTable_Test_Nominal, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateEepromChecksumDefinitionTable_Test_Nominal");
-    UtTest_Add(CS_ValidateEepromChecksumDefinitionTable_Test_IllegalChecksumRangeStateEnabled, CS_Test_Setup,
-               CS_Test_TearDown, "CS_ValidateEepromChecksumDefinitionTable_Test_IllegalChecksumRangeStateEnabled");
-    UtTest_Add(CS_ValidateEepromChecksumDefinitionTable_Test_IllegalChecksumRangeStateDisabled, CS_Test_Setup,
-               CS_Test_TearDown, "CS_ValidateEepromChecksumDefinitionTable_Test_IllegalChecksumRangeStateDisabled");
-    UtTest_Add(CS_ValidateEepromChecksumDefinitionTable_Test_IllegalStateField, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateEepromChecksumDefinitionTable_Test_IllegalStateField");
-    UtTest_Add(CS_ValidateEepromChecksumDefinitionTable_Test_TableErrorResult, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateEepromChecksumDefinitionTable_Test_TableErrorResult");
-    UtTest_Add(CS_ValidateEepromChecksumDefinitionTable_Test_UndefTableErrorResult, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateEepromChecksumDefinitionTable_Test_UndefTableErrorResult");
-
-    UtTest_Add(CS_ValidateMemoryChecksumDefinitionTable_Test_Nominal, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateMemoryChecksumDefinitionTable_Test_Nominal");
-    UtTest_Add(CS_ValidateMemoryChecksumDefinitionTable_Test_IllegalChecksumRangeStateEnabled, CS_Test_Setup,
-               CS_Test_TearDown, "CS_ValidateMemoryChecksumDefinitionTable_Test_IllegalChecksumRangeStateEnabled");
-    UtTest_Add(CS_ValidateMemoryChecksumDefinitionTable_Test_IllegalChecksumRangeStateDisabled, CS_Test_Setup,
-               CS_Test_TearDown, "CS_ValidateMemoryChecksumDefinitionTable_Test_IllegalChecksumRangeStateDisabled");
-    UtTest_Add(CS_ValidateMemoryChecksumDefinitionTable_Test_IllegalStateField, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateMemoryChecksumDefinitionTable_Test_IllegalStateField");
-    UtTest_Add(CS_ValidateMemoryChecksumDefinitionTable_Test_TableErrorResult, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateMemoryChecksumDefinitionTable_Test_TableErrorResult");
-    UtTest_Add(CS_ValidateMemoryChecksumDefinitionTable_Test_UndefTableErrorResult, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateMemoryChecksumDefinitionTable_Test_UndefTableErrorResult");
-
-    UtTest_Add(CS_ValidateTablesChecksumDefinitionTable_Test_Nominal, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateTablesChecksumDefinitionTable_Test_Nominal");
-    UtTest_Add(CS_ValidateTablesChecksumDefinitionTable_Test_DuplicateNameStateEmpty, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateTablesChecksumDefinitionTable_Test_DuplicateNameStateEmpty");
-    UtTest_Add(CS_ValidateTablesChecksumDefinitionTable_Test_DuplicateNameStateEnabled, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateTablesChecksumDefinitionTable_Test_DuplicateNameStateEnabled");
-    UtTest_Add(CS_ValidateTablesChecksumDefinitionTable_Test_DuplicateNameStateDisabled, CS_Test_Setup,
-               CS_Test_TearDown, "CS_ValidateTablesChecksumDefinitionTable_Test_DuplicateNameStateDisabled");
-    UtTest_Add(CS_ValidateTablesChecksumDefinitionTable_Test_IllegalStateField, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateTablesChecksumDefinitionTable_Test_IllegalStateField");
-    UtTest_Add(CS_ValidateTablesChecksumDefinitionTable_Test_IllegalStateEmptyName, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateTablesChecksumDefinitionTable_Test_IllegalStateEmptyName");
-    UtTest_Add(CS_ValidateTablesChecksumDefinitionTable_Test_TableErrorResult, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateTablesChecksumDefinitionTable_Test_TableErrorResult");
-    UtTest_Add(CS_ValidateTablesChecksumDefinitionTable_Test_UndefTableErrorResult, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateTablesChecksumDefinitionTable_Test_UndefTableErrorResult");
-    UtTest_Add(CS_ValidateTablesChecksumDefinitionTable_Test_CsTableError, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateTablesChecksumDefinitionTable_Test_CsTableError");
-
-    UtTest_Add(CS_ValidateAppChecksumDefinitionTable_Test_Nominal, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateAppChecksumDefinitionTable_Test_Nominal");
-    UtTest_Add(CS_ValidateAppChecksumDefinitionTable_Test_DuplicateNameStateEmpty, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateAppChecksumDefinitionTable_Test_DuplicateNameStateEmpty");
-    UtTest_Add(CS_ValidateAppChecksumDefinitionTable_Test_DuplicateNameStateEnabled, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateAppChecksumDefinitionTable_Test_DuplicateNameStateEnabled");
-    UtTest_Add(CS_ValidateAppChecksumDefinitionTable_Test_DuplicateNameStateDisabled, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateAppChecksumDefinitionTable_Test_DuplicateNameStateDisabled");
-    UtTest_Add(CS_ValidateAppChecksumDefinitionTable_Test_IllegalStateField, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateAppChecksumDefinitionTable_Test_IllegalStateField");
-    UtTest_Add(CS_ValidateAppChecksumDefinitionTable_Test_IllegalStateEmptyName, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateAppChecksumDefinitionTable_Test_IllegalStateEmptyName");
-    UtTest_Add(CS_ValidateAppChecksumDefinitionTable_Test_LongName, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateAppChecksumDefinitionTable_Test_LongName");
-    UtTest_Add(CS_ValidateAppChecksumDefinitionTable_Test_TableErrorResult, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateAppChecksumDefinitionTable_Test_TableErrorResult");
-    UtTest_Add(CS_ValidateAppChecksumDefinitionTable_Test_UndefTableErrorResult, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateAppChecksumDefinitionTable_Test_UndefTableErrorResult");
-    UtTest_Add(CS_ValidateAppChecksumDefinitionTable_Test_EmptyNameTableResult, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ValidateAppChecksumDefinitionTable_Test_EmptyNameTableResult");
-
-    UtTest_Add(CS_ProcessNewEepromMemoryDefinitionTable_Test_EEPROMTableNominal, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewEepromMemoryDefinitionTable_Test_EEPROMTableNominal");
-    UtTest_Add(CS_ProcessNewEepromMemoryDefinitionTable_Test_MemoryTableNominal, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewEepromMemoryDefinitionTable_Test_MemoryTableNominal");
-    UtTest_Add(CS_ProcessNewEepromMemoryDefinitionTable_Test_EEPROMTableNoValidEntries, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewEepromMemoryDefinitionTable_Test_EEPROMTableNoValidEntries");
-    UtTest_Add(CS_ProcessNewEepromMemoryDefinitionTable_Test_MemoryTableNoValidEntries, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewEepromMemoryDefinitionTable_Test_MemoryTableNoValidEntries");
-
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_DefEepromTableHandle, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_DefEepromTableHandle");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_DefMemoryTableHandle, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_DefMemoryTableHandle");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_DefTablesTableHandle, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_DefTablesTableHandle");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_DefAppTableHandle, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_DefAppTableHandle");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_ResEepromTableHandle, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_ResEepromTableHandle");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_ResMemoryTableHandle, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_ResMemoryTableHandle");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_ResTablesTableHandle, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_ResTablesTableHandle");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_ResAppTableHandle, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_ResAppTableHandle");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_StateEmptyNoValidEntries, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_StateEmptyNoValidEntries");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_LimitApplicationNameLength, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_LimitApplicationNameLength");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_LimitTableNameLength, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_LimitTableNameLength");
-    UtTest_Add(CS_ProcessNewTablesDefinitionTable_Test_MaxTableNameLength, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewTablesDefinitionTable_Test_MaxTableNameLength");
-
-    UtTest_Add(CS_ProcessNewAppDefinitionTable_Test_Nominal, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewAppDefinitionTable_Test_Nominal");
-    UtTest_Add(CS_ProcessNewAppDefinitionTable_Test_StateEmptyNoValidEntries, CS_Test_Setup, CS_Test_TearDown,
-               "CS_ProcessNewAppDefinitionTable_Test_StateEmptyNoValidEntries");
-
-    UtTest_Add(CS_TableInit_Test_DefaultDefinitionTableLoadErrorEEPROM, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_DefaultDefinitionTableLoadErrorEEPROM");
-    UtTest_Add(CS_TableInit_Test_DefinitionTableGetAddressErrorEEPROM, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_DefinitionTableGetAddressErrorEEPROM");
-    UtTest_Add(CS_TableInit_Test_DefinitionTableGetAddressErrorMemory, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_DefinitionTableGetAddressErrorMemory");
-    UtTest_Add(CS_TableInit_Test_DefinitionTableGetAddressErrorTables, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_DefinitionTableGetAddressErrorTables");
-    UtTest_Add(CS_TableInit_Test_DefinitionTableGetAddressErrorApps, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_DefinitionTableGetAddressErrorApps");
-    UtTest_Add(CS_TableInit_Test_EepromTableAndNotLoadedFromMemory, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_EepromTableAndNotLoadedFromMemory");
-    UtTest_Add(CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterResultsTableRegisterError, CS_Test_Setup,
-               CS_Test_TearDown, "CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterResultsTableRegisterError");
-    UtTest_Add(CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterResultsTableGetAddressError, CS_Test_Setup,
-               CS_Test_TearDown, "CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterResultsTableGetAddressError");
-    UtTest_Add(CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterDefinitionTableRegisterError, CS_Test_Setup,
-               CS_Test_TearDown, "CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterDefinitionTableRegisterError");
-    UtTest_Add(CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterDefinitionTableFileLoadError, CS_Test_Setup,
-               CS_Test_TearDown, "CS_TableInit_Test_EepromTableAndLoadedFromMemoryAfterDefinitionTableFileLoadError");
-    UtTest_Add(CS_TableInit_Test_MemoryTableAndNotLoadedFromMemory, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_MemoryTableAndNotLoadedFromMemory");
-    UtTest_Add(CS_TableInit_Test_MemoryTableAndLoadedFromMemory, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_MemoryTableAndLoadedFromMemory");
-    UtTest_Add(CS_TableInit_Test_AppTableAndNotLoadedFromMemory, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_AppTableAndNotLoadedFromMemory");
-    UtTest_Add(CS_TableInit_Test_AppTableAndLoadedFromMemory, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_AppTableAndLoadedFromMemory");
-    UtTest_Add(CS_TableInit_Test_TablesTableAndNotLoadedFromMemory, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_TablesTableAndNotLoadedFromMemory");
-    UtTest_Add(CS_TableInit_Test_TablesTableAndLoadedFromMemory, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_TablesTableAndLoadedFromMemory");
-    UtTest_Add(CS_TableInit_Test_DefaultAndLoadedFromMemory, CS_Test_Setup, CS_Test_TearDown,
-               "CS_TableInit_Test_DefaultAndLoadedFromMemory");
-
-    UtTest_Add(CS_HandleTableUpdate_Test_ProcessNewTablesDefinitionTable, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_ProcessNewTablesDefinitionTable");
-    UtTest_Add(CS_HandleTableUpdate_Test_ProcessNewAppDefinitionTable, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_ProcessNewAppDefinitionTable");
-    UtTest_Add(CS_HandleTableUpdate_Test_ProcessNewEepromMemoryDefinitionTable, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_ProcessNewEepromMemoryDefinitionTable");
-    UtTest_Add(CS_HandleTableUpdate_Test_ResultsTableGetAddressErrorEEPROM, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_ResultsTableGetAddressErrorEEPROM");
-    UtTest_Add(CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorEEPROM, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorEEPROM");
-    UtTest_Add(CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorMemory, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorMemory");
-    UtTest_Add(CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorTables, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorTables");
-    UtTest_Add(CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorApps, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_DefinitionTableGetAddressErrorApps");
-    UtTest_Add(CS_HandleTableUpdate_Test_BadTableHandle, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_BadTableHandle");
-    UtTest_Add(CS_HandleTableUpdate_Test_CsOwner, CS_Test_Setup, CS_Test_TearDown, "CS_HandleTableUpdate_Test_CsOwner");
-    UtTest_Add(CS_HandleTableUpdate_Test_GetAddressError, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_GetAddressError");
-    UtTest_Add(CS_HandleTableUpdate_Test_InvalidTable, CS_Test_Setup, CS_Test_TearDown,
-               "CS_HandleTableUpdate_Test_InvalidTable");
+    UtTest_Add(Test_CS_ValidateEepromChecksumDefinitionTable, CS_Test_Setup, CS_Test_TearDown,
+               "CS_ValidateEepromChecksumDefinitionTable");
+    UtTest_Add(Test_CS_ValidateMemoryChecksumDefinitionTable, CS_Test_Setup, CS_Test_TearDown,
+               "CS_ValidateMemoryChecksumDefinitionTable");
+    UtTest_Add(Test_CS_ValidateTablesChecksumDefinitionTable, CS_Test_Setup, CS_Test_TearDown,
+               "CS_ValidateTablesChecksumDefinitionTable");
+    UtTest_Add(Test_CS_ValidateAppChecksumDefinitionTable, CS_Test_Setup, CS_Test_TearDown,
+               "CS_ValidateAppChecksumDefinitionTable");
+    UtTest_Add(Test_CS_ProcessNewEepromMemoryDefinitionTable, CS_Test_Setup, CS_Test_TearDown,
+               "CS_ProcessNewEepromMemoryDefinitionTable");
+    UtTest_Add(Test_CS_ProcessNewTablesDefinitionTable, CS_Test_Setup, CS_Test_TearDown,
+               "CS_ProcessNewTablesDefinitionTable");
+    UtTest_Add(Test_CS_ProcessNewAppDefinitionTable, CS_Test_Setup, CS_Test_TearDown,
+               "CS_ProcessNewAppDefinitionTable");
+    UtTest_Add(Test_CS_TableInit, CS_Test_Setup, CS_Test_TearDown, "CS_TableInit");
+    UtTest_Add(Test_CS_HandleTableUpdate, CS_Test_Setup, CS_Test_TearDown, "CS_HandleTableUpdate");
+    UtTest_Add(Test_CS_CallTableUpdateHandler, CS_Test_Setup, CS_Test_TearDown, "CS_CallTableUpdateHandler");
 }

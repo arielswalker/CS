@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -19,32 +18,13 @@
 
 /**
  * @file
- *   Specification for the CFS Checksum macro constants that can
- *   be configured from one mission to another
+ *   Checksum (CS) Application Topic IDs
  */
-#ifndef CS_MISSION_CFG_H
-#define CS_MISSION_CFG_H
+#ifndef EDS_CS_TOPICID_VALUES_H
+#define EDS_CS_TOPICID_VALUES_H
 
-#include <cfe_mission_cfg.h>
+#include "cfe_mission_eds_designparameters.h"
 
-/**
- * \defgroup cfscsmissioncfg CFS Checksum Mission Configuration
- * \{
- */
-
-/**
- * \brief default CRC algorithm
- *
- *  \par  Description:
- *        This parameter is the algorithm used by CS to checksum
- *        the requested data.
- *
- *  \par Limits:
- *         This parameter is limited to either #CFE_MISSION_ES_DEFAULT_CRC,
- *         or  #CFE_ES_CrcType_CRC_16
- */
-#define CS_DEFAULT_ALGORITHM CFE_MISSION_ES_DEFAULT_CRC
-
-/**\}*/
+#define CFE_MISSION_CS_TIDVAL(x) EdsParam_CFE_MISSION_CS_##x##_TOPICID
 
 #endif
