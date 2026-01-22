@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -30,16 +29,24 @@
  **
  **************************************************************************/
 #include "cfe.h"
-#include "cs_tbldefs.h"
+#include "cs_tbl.h"
+#include "cs_table_processing.h"
+#include "cs_app.h"
+
+/**************************************************************************
+ **
+ ** Utility function declarations
+ **
+ **************************************************************************/
 
 /**
- * \brief Converts the numeric table ID to a string for logging
+ * \brief Converts the table reference to a string for logging
  *
- * \param [in] TableId          Numeric identifier of table
+ * \param [in] Tbl          Pointer to global table wrapper struct
  *
  * \return Pointer to printable string (never NULL)
  */
-const char *CS_GetTableTypeAsString(uint32 TableId);
+const char *CS_GetTableTypeAsString(const CS_TableWrapper_t *Tbl);
 
 /**
  * \brief Zeros out temporary checksum values of EEPROM table entries
@@ -255,19 +262,10 @@ bool CS_GetAppDefTblEntryByName(CS_Def_App_Table_Entry_t **EntryPtr, const char 
  *  \par Assumptions, External Events, and Notes:
  *       None
  *
- *  \param [in]      EnabledEntry   A pointer to a uint16 that will be
- *                                  assigned an enabled entry ID, if
- *                                  one exists.  Calling function ensures
- *                                  this is non-null.
- *
- *  \param [out]   * EnabledEntry   The ID of an enabled entry in the
- *                                  table, if the function resturs true
- *
- *  \return Boolean entry found response
- *  \retval true  Entry was found in the table
- *  \retval false Entry was not found in the table
+ *  \return Pointer to next entry
+ *  \retval NULL if no enabled entry was found
  */
-bool CS_FindEnabledEepromEntry(uint16 *EnabledEntry);
+CS_Res_EepromMemory_Table_Entry_t *CS_FindEnabledEepromEntry(void);
 
 /**
  * \brief Find an enabled Memory entry
@@ -279,19 +277,10 @@ bool CS_FindEnabledEepromEntry(uint16 *EnabledEntry);
  *  \par Assumptions, External Events, and Notes:
  *       None
  *
- *  \param [in]      EnabledEntry   A pointer to a uint16 that will be
- *                                  assigned an enabled entry ID, if
- *                                  one exists.  Calling function ensures
- *                                  this is non-null.
- *
- *  \param [out]   * EnabledEntry   The ID of an enabled entry in the
- *                                  table, if the function resturs true
- *
- *  \return Boolean enabled entry found response
- *  \retval true  Enabled entry was found in the table
- *  \retval false Enabled entry was not found in the table
+ *  \return Pointer to next entry
+ *  \retval NULL if no enabled entry was found
  */
-bool CS_FindEnabledMemoryEntry(uint16 *EnabledEntry);
+CS_Res_EepromMemory_Table_Entry_t *CS_FindEnabledMemoryEntry(void);
 
 /**
  * \brief Find an enabled Tables entry
@@ -303,19 +292,10 @@ bool CS_FindEnabledMemoryEntry(uint16 *EnabledEntry);
  *  \par Assumptions, External Events, and Notes:
  *       None
  *
- *  \param [in]      EnabledEntry   A pointer to a uint16 that will be
- *                                  assigned an enabled entry ID, if
- *                                  one exists.  Calling function ensures
- *                                  this is non-null.
- *
- *  \param [out]   * EnabledEntry   The ID of an enabled entry in the
- *                                  table, if the function resturs true
- *
- *  \return Boolean enabled entry found response
- *  \retval true  Enabled entry was found in the table
- *  \retval false Enabled entry was not found in the table
+ *  \return Pointer to next entry
+ *  \retval NULL if no enabled entry was found
  */
-bool CS_FindEnabledTablesEntry(uint16 *EnabledEntry);
+CS_Res_Tables_Table_Entry_t *CS_FindEnabledTablesEntry(void);
 
 /**
  * \brief Find an enabled App entry
@@ -327,46 +307,10 @@ bool CS_FindEnabledTablesEntry(uint16 *EnabledEntry);
  *  \par Assumptions, External Events, and Notes:
  *       None
  *
- *  \param [in]      EnabledEntry   A pointer to a uint16 that will be
- *                                  assigned an enabled entry ID, if
- *                                  one exists.  Calling function ensures
- *                                  this is non-null.
- *
- *  \param [out]   * EnabledEntry   The ID of an enabled entry in the
- *                                  table, if the function resturs true
- *
- *  \return Boolean enabled entry found response
- *  \retval true  Enabled entry was found in the table
- *  \retval false Enabled entry was not found in the table
+ *  \return Pointer to next entry
+ *  \retval NULL if no enabled entry was found
  */
-bool CS_FindEnabledAppEntry(uint16 *EnabledEntry);
-
-/**
- * \brief Verify command message length
- *
- *  \par Description
- *       This routine will check if the actual length of a software bus
- *       command message matches the expected length and send an
- *       error event message if a mismatch occurs
- *
- *  \par Assumptions, External Events, and Notes:
- *       None
- *
- *  \param [in]   msg              A #CFE_MSG_Message_t* pointer that
- *                                 references the software bus message.
- *                                 Calling function ensures this is
- *                                 non-null.
- *
- *  \param [in]   ExpectedLength   The expected length of the message
- *                                 based upon the command code
- *
- *  \return Boolean length valid response
- *  \retval true  Message length matches ExpectedLength
- *  \retval false Message length ExpectedLength mismatch
- *
- *  \sa #CS_CMD_LEN_ERR_EID
- */
-bool CS_VerifyCmdLength(const CFE_MSG_Message_t *msg, size_t ExpectedLength);
+CS_Res_App_Table_Entry_t *CS_FindEnabledAppEntry(void);
 
 /**
  * \brief Compute a background check cycle on the OS
@@ -492,23 +436,291 @@ void CS_ResetTablesTblResultEntry(CS_Res_Tables_Table_Entry_t *TablesTblResultEn
 CFE_Status_t CS_HandleRoutineTableUpdates(void);
 
 /**
- * \brief Attempts to re-share a table
+ * \brief Check if one shot recompute is in progress
  *
  *  \par Description
- *       This function is called if the first attempt to share the table
- *       is unsuccessful.  This function attempts to share the table again
- *       to see if it reappeared.  Calling function ensures that parameters
- *       are non-null.
+ *       Checks that the one shot is NOT currently running
  *
  *  \par Assumptions, External Events, and Notes:
  *       None
  *
- * \return Execution status, see \ref CFEReturnCodes
- * \retval #CFE_SUCCESS \copybrief CFE_SUCCESS
+ * \retval true if one shot recompute is in progress
+ * \retval false if one shot recompute is not in progress
  */
-CFE_Status_t CS_AttemptTableReshare(CS_Res_Tables_Table_Entry_t *ResultsEntry, CFE_TBL_Handle_t *LocalTblHandle,
-                                    CFE_TBL_Info_t *TblInfo, cpuaddr *LocalAddress, int32 *ResultGetInfo);
-
 bool CS_CheckRecomputeOneshot(void);
+
+/**
+ * \brief Switches definition state between ENABLED and DISABLED
+ *
+ *  \par Description
+ *       Changes the state of the definition table entry to the indicated value
+ *       If the state within the definition table is not valid then the state is
+ *       not changed, it will remain at the previous value.
+ *
+ *       If this resulted in an actual change to the definition table, then the
+ *       table is marked as modified within table services.
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       None
+ *
+ * \param tw Pointer to table wrapper struct
+ * \param EntryPtr Pointer to entry within definition table
+ * \param NewState value to set the "State" field to (Must be ENABLED or DISABLED)
+ *
+ * \returns Previous state of table entry
+ */
+CS_ChecksumState_Enum_t CS_SetDefEntryState(CS_TableWrapper_t *tw, void *EntryPtr, CS_ChecksumState_Enum_t NewState);
+
+/**
+ * \brief Checks if the definition table matches the given name
+ *
+ *  \par Description
+ *       Checks if the passed-in name matches the name of the definition table
+ *       for the given table ID
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       None
+ *
+ * \param Name Name of table
+ * \param TableIdx Identifier of global table
+ *
+ * \retval true if name matches
+ * \retval false if name does not match
+ */
+bool CS_CheckDefTableNameMatch(const char *Name, uint16 TableIdx);
+
+/**
+ * \brief Checks if the result table matches the given name
+ *
+ *  \par Description
+ *       Checks if the passed-in name matches the name of the result table
+ *       for the given table ID
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       None
+ *
+ * \param Name Name of table
+ * \param TableIdx Identifier of global table
+ *
+ * \retval true if name matches
+ * \retval false if name does not match
+ */
+bool CS_CheckResTableNameMatch(const char *Name, uint16 TableIdx);
+
+/**
+ * \brief Gets the address of the specified definition table entry
+ *
+ *  \par Description
+ *       Computes and returns a pointer to the specified definition table entry
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       The returned pointer is generic and must be cast to the correct
+ *       structure type depending on which table is being accessed.
+ *
+ * \param tw Pointer to global table wrapper
+ * \param EntryIdx Index of entry to locate
+ *
+ * \returns Pointer to definition table entry
+ * \retval  NULL if the entry index is out of range
+ */
+void *CS_GetDefEntryAddr(CS_TableWrapper_t *tw, uint16 EntryIdx);
+
+/**
+ * \brief Gets the address of the specified result table entry
+ *
+ *  \par Description
+ *       Computes and returns a pointer to the specified result table entry
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       The returned pointer is generic and must be cast to the correct
+ *       structure type depending on which table is being accessed.
+ *
+ * \param tw Pointer to global table wrapper
+ * \param EntryIdx Index of entry to locate
+ *
+ * \returns Pointer to result table entry
+ * \retval  NULL if the entry index is out of range
+ */
+void *CS_GetResEntryAddr(CS_TableWrapper_t *tw, uint16 EntryIdx);
+
+/**************************************************************************
+ **
+ ** Helper functions (inline)
+ ** These exist to consolidate repetitive logic and make the code more readable
+ **
+ **************************************************************************/
+
+/**
+ * \brief Checks that a state value is ENABLED and DISABLED
+ *
+ *  \par Description
+ *       A configured table entry must be set to ENABLED or DISABLED only.
+ *       This confirms that the state is one of those two values.
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       EMPTY is allowed for unused entries.  A check for empty entries
+ *       must be done separately.
+ *
+ * \param State State value to test
+ *
+ * \retval true if state is ENABLED or DISABLED
+ * \retval false if state is anything else
+ */
+static inline bool CS_StateValid(CS_ChecksumState_Enum_t State)
+{
+    return (State == CS_ChecksumState_ENABLED || State == CS_ChecksumState_DISABLED);
+}
+
+/**
+ * \brief Gets a pointer to the EEPROM checksum definition for the given index
+ *
+ *  \par Description
+ *       Gets a pointer to the definition table entry
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       Returns NULL if the entry index is out of range
+ *
+ * \param EntryIdx Index of entry to locate
+ *
+ * \returns Pointer to definition table entry, if index is valid
+ * \retval  NULL if index is invalid
+ */
+static inline CS_Def_EepromMemory_Table_Entry_t *CS_GetEepromDefEntry(uint16 EntryIdx)
+{
+    return CS_GetDefEntryAddr(&CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE], EntryIdx);
+}
+
+/**
+ * \brief Gets a pointer to the EEPROM checksum result for the given index
+ *
+ *  \par Description
+ *       Gets a pointer to the result table entry
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       Returns NULL if the entry index is out of range
+ *
+ * \param EntryIdx Index of entry to locate
+ *
+ * \returns Pointer to result table entry, if index is valid
+ * \retval  NULL if index is invalid
+ */
+static inline CS_Res_EepromMemory_Table_Entry_t *CS_GetEepromResEntry(uint16 EntryIdx)
+{
+    return CS_GetResEntryAddr(&CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE], EntryIdx);
+}
+
+/**
+ * \brief Gets a pointer to the Memory checksum definition for the given index
+ *
+ *  \par Description
+ *       Gets a pointer to the definition table entry
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       Returns NULL if the entry index is out of range
+ *
+ * \param EntryIdx Index of entry to locate
+ *
+ * \returns Pointer to definition table entry, if index is valid
+ * \retval  NULL if index is invalid
+ */
+static inline CS_Def_EepromMemory_Table_Entry_t *CS_GetMemoryDefEntry(uint16 EntryIdx)
+{
+    return CS_GetDefEntryAddr(&CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE], EntryIdx);
+}
+
+/**
+ * \brief Gets a pointer to the Memory checksum result for the given index
+ *
+ *  \par Description
+ *       Gets a pointer to the result table entry
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       Returns NULL if the entry index is out of range
+ *
+ * \param EntryIdx Index of entry to locate
+ *
+ * \returns Pointer to result table entry, if index is valid
+ * \retval  NULL if index is invalid
+ */
+static inline CS_Res_EepromMemory_Table_Entry_t *CS_GetMemoryResEntry(uint16 EntryIdx)
+{
+    return CS_GetResEntryAddr(&CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE], EntryIdx);
+}
+
+/**
+ * \brief Gets a pointer to the Table checksum definition for the given index
+ *
+ *  \par Description
+ *       Gets a pointer to the definition table entry
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       Returns NULL if the entry index is out of range
+ *
+ * \param EntryIdx Index of entry to locate
+ *
+ * \returns Pointer to definition table entry, if index is valid
+ * \retval  NULL if index is invalid
+ */
+static inline CS_Def_Tables_Table_Entry_t *CS_GetTablesDefEntry(uint16 EntryIdx)
+{
+    return CS_GetDefEntryAddr(&CS_AppData.Tbl[CS_ChecksumType_TABLES_TABLE], EntryIdx);
+}
+
+/**
+ * \brief Gets a pointer to the Table checksum result for the given index
+ *
+ *  \par Description
+ *       Gets a pointer to the result table entry
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       Returns NULL if the entry index is out of range
+ *
+ * \param EntryIdx Index of entry to locate
+ *
+ * \returns Pointer to result table entry, if index is valid
+ * \retval  NULL if index is invalid
+ */
+static inline CS_Res_Tables_Table_Entry_t *CS_GetTablesResEntry(uint16 EntryIdx)
+{
+    return CS_GetResEntryAddr(&CS_AppData.Tbl[CS_ChecksumType_TABLES_TABLE], EntryIdx);
+}
+
+/**
+ * \brief Gets a pointer to the App checksum definition for the given index
+ *
+ *  \par Description
+ *       Gets a pointer to the definition table entry
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       Returns NULL if the entry index is out of range
+ *
+ * \param EntryIdx Index of entry to locate
+ *
+ * \returns Pointer to definition table entry, if index is valid
+ * \retval  NULL if index is invalid
+ */
+static inline CS_Def_App_Table_Entry_t *CS_GetAppDefEntry(uint16 EntryIdx)
+{
+    return CS_GetDefEntryAddr(&CS_AppData.Tbl[CS_ChecksumType_APP_TABLE], EntryIdx);
+}
+
+/**
+ * \brief Gets a pointer to the App checksum result for the given index
+ *
+ *  \par Description
+ *       Gets a pointer to the result table entry
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       Returns NULL if the entry index is out of range
+ *
+ * \param EntryIdx Index of entry to locate
+ *
+ * \returns Pointer to result table entry, if index is valid
+ * \retval  NULL if index is invalid
+ */
+static inline CS_Res_App_Table_Entry_t *CS_GetAppResEntry(uint16 EntryIdx)
+{
+    return CS_GetResEntryAddr(&CS_AppData.Tbl[CS_ChecksumType_APP_TABLE], EntryIdx);
+}
 
 #endif

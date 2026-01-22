@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -22,6 +21,7 @@
  */
 
 #include "cs_test_utils.h"
+#include "cs_utils.h"
 #include "cs_tbldefs.h"
 
 /* UT includes */
@@ -41,6 +41,15 @@ CS_Res_App_Table_Entry_t          CS_DefaultAppResTable[CS_MAX_NUM_APP_TABLE_ENT
 #define UT_MAX_SENDEVENT_DEPTH 4
 CFE_EVS_SendEvent_context_t    context_CFE_EVS_SendEvent[UT_MAX_SENDEVENT_DEPTH];
 CFE_ES_WriteToSysLog_context_t context_CFE_ES_WriteToSysLog;
+
+struct CS_SetDefEntryState_Context
+{
+    void * EntryPtr;
+    CS_ChecksumState_Enum_t NewState;
+    CS_ChecksumState_Enum_t OldState;
+};
+
+static struct CS_SetDefEntryState_Context CS_SetDefEntryState_Context;
 
 void UT_Handler_CFE_EVS_SendEvent(void *UserObj, UT_EntryKey_t FuncKey, const UT_StubContext_t *Context, va_list va)
 {
@@ -73,27 +82,117 @@ void UT_Handler_CFE_ES_WriteToSysLog(void *UserObj, UT_EntryKey_t FuncKey, const
     context_CFE_ES_WriteToSysLog.Spec[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH - 1] = '\0';
 }
 
+void UT_Handler_CS_TableEntry(void *UserObj, UT_EntryKey_t FuncKey, const UT_StubContext_t *Context)
+{
+    CS_TableWrapper_t *tw       = UT_Hook_GetArgValueByName(Context, "tw", CS_TableWrapper_t *);
+    uint16             EntryIdx = UT_Hook_GetArgValueByName(Context, "EntryIdx", uint16);
+    uint8 *            Base;
+    int32              Status;
+
+    Base   = NULL;
+    Status = 0;
+
+    if ((!UT_Stub_GetInt32StatusCode(Context, &Status) && EntryIdx < tw->NumEntries) || Status != 0)
+    {
+        if (FuncKey == UT_KEY(CS_GetDefEntryAddr))
+        {
+            Base = tw->DefAddr;
+            Base += (tw->DefEntrySize * EntryIdx);
+        }
+        else if (FuncKey == UT_KEY(CS_GetResEntryAddr))
+        {
+            Base = tw->ResAddr;
+            Base += (tw->ResEntrySize * EntryIdx);
+        }
+    }
+
+    UT_Stub_SetReturnValue(FuncKey, Base);
+}
+
+void UT_Handler_CS_SetDefEntryState(void *UserObj, UT_EntryKey_t FuncKey, const UT_StubContext_t *Context)
+{
+    struct CS_SetDefEntryState_Context *Ctxt = UserObj;
+
+    Ctxt->EntryPtr = UT_Hook_GetArgValueByName(Context, "EntryPtr", void *);
+    Ctxt->NewState = UT_Hook_GetArgValueByName(Context, "NewState", CS_ChecksumState_Enum_t);
+
+    UT_Stub_SetReturnValue(FuncKey, Ctxt->OldState);
+}
+
+void CS_Test_Setup_SetDefEntryState(CS_ChecksumState_Enum_t OldState)
+{
+    memset(&CS_SetDefEntryState_Context, 0, sizeof(CS_SetDefEntryState_Context));
+    CS_SetDefEntryState_Context.OldState = OldState;
+    UT_SetHandlerFunction(UT_KEY(CS_SetDefEntryState), UT_Handler_CS_SetDefEntryState, &CS_SetDefEntryState_Context);
+}
+
+void CS_Test_Check_SetDefEntryState(void *EntryPtr, CS_ChecksumState_Enum_t NewState)
+{
+    UtAssert_ADDRESS_EQ(CS_SetDefEntryState_Context.EntryPtr, EntryPtr);
+    UtAssert_UINT32_EQ(CS_SetDefEntryState_Context.NewState, NewState);
+}
+
+void CS_Test_ResetEventCheck(void)
+{
+    memset(context_CFE_EVS_SendEvent, 0, sizeof(context_CFE_EVS_SendEvent));
+    UT_ResetState(UT_KEY(CFE_EVS_SendEvent));
+    UT_SetVaHandlerFunction(UT_KEY(CFE_EVS_SendEvent), UT_Handler_CFE_EVS_SendEvent, NULL);
+}
+
 void CS_Test_Setup(void)
 {
+    CS_TableWrapper_t *tw;
     /* initialize test environment to default state for every test */
     UT_ResetState(0);
 
     memset(&CS_AppData, 0, sizeof(CS_AppData));
-    memset(context_CFE_EVS_SendEvent, 0, sizeof(context_CFE_EVS_SendEvent));
     memset(&context_CFE_ES_WriteToSysLog, 0, sizeof(context_CFE_ES_WriteToSysLog));
 
     /* Register custom handlers */
-    UT_SetVaHandlerFunction(UT_KEY(CFE_EVS_SendEvent), UT_Handler_CFE_EVS_SendEvent, NULL);
+    CS_Test_ResetEventCheck();
     UT_SetVaHandlerFunction(UT_KEY(CFE_ES_WriteToSysLog), UT_Handler_CFE_ES_WriteToSysLog, NULL);
 
-    CS_AppData.DefEepromTblPtr = &CS_AppData.DefaultEepromDefTable[0];
-    CS_AppData.ResEepromTblPtr = &CS_DefaultEepromResTable[0];
-    CS_AppData.DefMemoryTblPtr = &CS_AppData.DefaultMemoryDefTable[0];
-    CS_AppData.ResMemoryTblPtr = &CS_DefaultMemoryResTable[0];
-    CS_AppData.DefTablesTblPtr = &CS_AppData.DefaultTablesDefTable[0];
-    CS_AppData.ResTablesTblPtr = &CS_DefaultTablesResTable[0];
-    CS_AppData.DefAppTblPtr    = &CS_AppData.DefaultAppDefTable[0];
-    CS_AppData.ResAppTblPtr    = &CS_DefaultAppResTable[0];
+    UT_SetHandlerFunction(UT_KEY(CS_GetDefEntryAddr), UT_Handler_CS_TableEntry, NULL);
+    UT_SetHandlerFunction(UT_KEY(CS_GetResEntryAddr), UT_Handler_CS_TableEntry, NULL);
+
+    tw                = &CS_AppData.Tbl[CS_ChecksumType_CFECORE];
+    tw->ResAddr       = &CS_AppData.CfeCoreCodeSeg;
+    tw->NumEntries    = 1;
+    tw->ResEntrySize  = sizeof(CS_Res_EepromMemory_Table_Entry_t);
+    tw->BaselineValue = &CS_AppData.HkPacket.Payload.CfeCoreBaseline;
+    tw                = &CS_AppData.Tbl[CS_ChecksumType_OSCORE];
+    tw->ResAddr       = &CS_AppData.OSCodeSeg;
+    tw->NumEntries    = 1;
+    tw->ResEntrySize  = sizeof(CS_Res_EepromMemory_Table_Entry_t);
+    tw->BaselineValue = &CS_AppData.HkPacket.Payload.OSBaseline;
+    tw                = &CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE];
+    tw->DefAddr       = &CS_AppData.DefaultEepromDefTable[0];
+    tw->ResAddr       = &CS_DefaultEepromResTable[0];
+    tw->NumEntries    = CS_MAX_NUM_EEPROM_TABLE_ENTRIES;
+    tw->DefEntrySize  = sizeof(CS_Def_EepromMemory_Table_Entry_t);
+    tw->ResEntrySize  = sizeof(CS_Res_EepromMemory_Table_Entry_t);
+    tw->GlobalState   = &CS_AppData.HkPacket.Payload.EepromCSState;
+    tw                = &CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE];
+    tw->DefAddr       = &CS_AppData.DefaultMemoryDefTable[0];
+    tw->ResAddr       = &CS_DefaultMemoryResTable[0];
+    tw->NumEntries    = CS_MAX_NUM_MEMORY_TABLE_ENTRIES;
+    tw->DefEntrySize  = sizeof(CS_Def_EepromMemory_Table_Entry_t);
+    tw->ResEntrySize  = sizeof(CS_Res_EepromMemory_Table_Entry_t);
+    tw->GlobalState   = &CS_AppData.HkPacket.Payload.MemoryCSState;
+    tw                = &CS_AppData.Tbl[CS_ChecksumType_TABLES_TABLE];
+    tw->DefAddr       = &CS_AppData.DefaultTablesDefTable[0];
+    tw->ResAddr       = &CS_DefaultTablesResTable[0];
+    tw->NumEntries    = CS_MAX_NUM_TABLES_TABLE_ENTRIES;
+    tw->DefEntrySize  = sizeof(CS_Def_Tables_Table_Entry_t);
+    tw->ResEntrySize  = sizeof(CS_Res_Tables_Table_Entry_t);
+    tw->GlobalState   = &CS_AppData.HkPacket.Payload.TablesCSState;
+    tw                = &CS_AppData.Tbl[CS_ChecksumType_APP_TABLE];
+    tw->DefAddr       = &CS_AppData.DefaultAppDefTable[0];
+    tw->ResAddr       = &CS_DefaultAppResTable[0];
+    tw->NumEntries    = CS_MAX_NUM_APP_TABLE_ENTRIES;
+    tw->DefEntrySize  = sizeof(CS_Def_App_Table_Entry_t);
+    tw->ResEntrySize  = sizeof(CS_Res_App_Table_Entry_t);
+    tw->GlobalState   = &CS_AppData.HkPacket.Payload.AppCSState;
 
     memset(CS_DefaultEepromResTable, 0, sizeof(CS_DefaultEepromResTable));
     memset(CS_DefaultMemoryResTable, 0, sizeof(CS_DefaultMemoryResTable));

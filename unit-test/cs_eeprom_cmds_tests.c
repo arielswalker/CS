@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -24,7 +23,7 @@
 #include "cs_eeprom_cmds.h"
 #include "cs_msg.h"
 #include "cs_msgdefs.h"
-#include "cs_events.h"
+#include "cs_eventids.h"
 #include "cs_version.h"
 #include "cs_utils.h"
 #include "cs_test_utils.h"
@@ -45,20 +44,19 @@ uint8 call_count_CFE_EVS_SendEvent;
 
 void CS_DisableEepromCmd_Test(void)
 {
-    CS_NoArgsCmd_t CmdPacket;
-    int32          strCmpResult;
-    char           ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_DisableEepromCmd_t CmdPacket;
+    int32                 strCmpResult;
+    char                  ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Checksumming of EEPROM is Disabled");
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_DisableEepromCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.EepromCSState == CS_STATE_DISABLED,
-                  "CS_AppData.HkPacket.Payload.EepromCSState == CS_STATE_DISABLED");
+    UtAssert_True(CS_AppData.HkPacket.Payload.EepromCSState == CS_ChecksumState_DISABLED,
+                  "CS_AppData.HkPacket.Payload.EepromCSState == CS_ChecksumState_DISABLED");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_DISABLE_EEPROM_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -77,9 +75,9 @@ void CS_DisableEepromCmd_Test(void)
 
 void CS_DisableEepromCmd_Test_OneShot(void)
 {
-    CS_NoArgsCmd_t CmdPacket;
+    CS_DisableEepromCmd_t CmdPacket;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     UT_SetDeferredRetcode(UT_KEY(CS_CheckRecomputeOneshot), 1, true);
 
     /* Execute the function being tested */
@@ -96,20 +94,19 @@ void CS_DisableEepromCmd_Test_OneShot(void)
 
 void CS_EnableEepromCmd_Test(void)
 {
-    CS_NoArgsCmd_t CmdPacket;
-    int32          strCmpResult;
-    char           ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_EnableEepromCmd_t CmdPacket;
+    int32                strCmpResult;
+    char                 ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Checksumming of EEPROM is Enabled");
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_EnableEepromCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.EepromCSState == CS_STATE_ENABLED,
-                  "CS_AppData.HkPacket.Payload.EepromCSState == CS_STATE_ENABLED");
+    UtAssert_True(CS_AppData.HkPacket.Payload.EepromCSState == CS_ChecksumState_ENABLED,
+                  "CS_AppData.HkPacket.Payload.EepromCSState == CS_ChecksumState_ENABLED");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_ENABLE_EEPROM_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -128,9 +125,9 @@ void CS_EnableEepromCmd_Test(void)
 
 void CS_EnableEepromCmd_Test_OneShot(void)
 {
-    CS_NoArgsCmd_t CmdPacket;
+    CS_EnableEepromCmd_t CmdPacket;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     UT_SetDeferredRetcode(UT_KEY(CS_CheckRecomputeOneshot), 1, true);
 
     /* Execute the function being tested */
@@ -147,19 +144,19 @@ void CS_EnableEepromCmd_Test_OneShot(void)
 
 void CS_ReportBaselineEntryIDEepromCmd_Test_Computed(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_ReportBaselineEntryIDEepromCmd_t CmdPacket;
+    int32                               strCmpResult;
+    char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t * ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Report baseline of EEPROM Entry %%d is 0x%%08X");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State           = 99;
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].ComputedYet     = true;
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].ComparisonValue = 1;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State           = CS_ChecksumState_ENABLED;
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].ComputedYet     = true;
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].ComparisonValue = 1;
 
     /* Execute the function being tested */
     CS_ReportBaselineEntryIDEepromCmd(&CmdPacket);
@@ -182,20 +179,20 @@ void CS_ReportBaselineEntryIDEepromCmd_Test_Computed(void)
 
 void CS_ReportBaselineEntryIDEepromCmd_Test_NotYetComputed(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_ReportBaselineEntryIDEepromCmd_t CmdPacket;
+    int32                               strCmpResult;
+    char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t * ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Report baseline of EEPROM Entry %%d has not been computed yet");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State           = 99;
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].ComputedYet     = false;
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].ComparisonValue = 1;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State           = CS_ChecksumState_ENABLED;
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].ComputedYet     = false;
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].ComparisonValue = 1;
 
     /* Execute the function being tested */
     CS_ReportBaselineEntryIDEepromCmd(&CmdPacket);
@@ -218,16 +215,16 @@ void CS_ReportBaselineEntryIDEepromCmd_Test_NotYetComputed(void)
 
 void CS_ReportBaselineEntryIDEepromCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_ReportBaselineEntryIDEepromCmd_t CmdPacket;
+    int32                               strCmpResult;
+    char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "EEPROM report baseline failed, Entry ID invalid: %%d, State: %%d Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_EEPROM_TABLE_ENTRIES;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    UT_ResetState(UT_KEY(CS_GetResEntryAddr)); /* Remove handler so this will return NULL */
 
     /* Execute the function being tested */
     CS_ReportBaselineEntryIDEepromCmd(&CmdPacket);
@@ -250,18 +247,18 @@ void CS_ReportBaselineEntryIDEepromCmd_Test_InvalidEntryErrorEntryIDTooHigh(void
 
 void CS_ReportBaselineEntryIDEepromCmd_Test_InvalidEntryErrorStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_ReportBaselineEntryIDEepromCmd_t CmdPacket;
+    int32                               strCmpResult;
+    char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t * ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "EEPROM report baseline failed, Entry ID invalid: %%d, State: %%d Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
     /* Execute the function being tested */
     CS_ReportBaselineEntryIDEepromCmd(&CmdPacket);
@@ -284,30 +281,34 @@ void CS_ReportBaselineEntryIDEepromCmd_Test_InvalidEntryErrorStateEmpty(void)
 
 void CS_RecomputeBaselineEepromCmd_Test_Nominal(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineEepromCmd_t    CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of EEPROM Entry ID %%d started");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State = 99;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
 
     /* Execute the function being tested */
     CS_RecomputeBaselineEepromCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.RecomputeInProgress == true, "CS_AppData.HkPacket.Payload.RecomputeInProgress == true");
-    UtAssert_True(CS_AppData.HkPacket.Payload.OneShotInProgress == false, "CS_AppData.HkPacket.Payload.OneShotInProgress == false");
+    UtAssert_True(CS_AppData.HkPacket.Payload.RecomputeInProgress == true,
+                  "CS_AppData.HkPacket.Payload.RecomputeInProgress == true");
+    UtAssert_True(CS_AppData.HkPacket.Payload.OneShotInProgress == false,
+                  "CS_AppData.HkPacket.Payload.OneShotInProgress == false");
 
-    UtAssert_True(CS_AppData.ChildTaskTable == CS_EEPROM_TABLE, "CS_AppData.ChildTaskTable == CS_EEPROM_TABLE");
-    UtAssert_True(CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID, "CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID");
-    UtAssert_True(CS_AppData.RecomputeEepromMemoryEntryPtr == &CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID],
-                  "CS_AppData.RecomputeEepromMemoryEntryPtr == &CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID]");
+    UtAssert_True(CS_AppData.ChildTaskTable == CS_ChecksumType_EEPROM_TABLE,
+                  "CS_AppData.ChildTaskTable == CS_ChecksumType_EEPROM_TABLE");
+    UtAssert_True(CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID,
+                  "CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID");
+    UtAssert_True(CS_AppData.RecomputeEepromMemoryEntryPtr == &ResEepromTblPtr[CmdPacket.Payload.EntryID],
+                  "CS_AppData.RecomputeEepromMemoryEntryPtr == &ResEepromTblPtr[CmdPacket.Payload.EntryID]");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_RECOMPUTE_EEPROM_STARTED_DBG_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_DEBUG);
@@ -326,32 +327,35 @@ void CS_RecomputeBaselineEepromCmd_Test_Nominal(void)
 
 void CS_RecomputeBaselineEepromCmd_Test_CreateChildTaskError(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineEepromCmd_t    CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of EEPROM Entry ID %%d failed, CFE_ES_CreateChildTask returned:  0x%%08X");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State = 99;
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
 
     /* Set to generate error message CS_RECOMPUTE_EEPROM_CREATE_CHDTASK_ERR_EID */
     UT_SetDeferredRetcode(UT_KEY(CFE_ES_CreateChildTask), 1, -1);
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_RecomputeBaselineEepromCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.OneShotInProgress == false, "CS_AppData.HkPacket.Payload.OneShotInProgress == false");
+    UtAssert_True(CS_AppData.HkPacket.Payload.OneShotInProgress == false,
+                  "CS_AppData.HkPacket.Payload.OneShotInProgress == false");
 
-    UtAssert_True(CS_AppData.ChildTaskTable == CS_EEPROM_TABLE, "CS_AppData.ChildTaskTable == CS_EEPROM_TABLE");
-    UtAssert_True(CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID, "CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID");
-    UtAssert_True(CS_AppData.RecomputeEepromMemoryEntryPtr == &CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID],
-                  "CS_AppData.RecomputeEepromMemoryEntryPtr == &CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID]");
+    UtAssert_True(CS_AppData.ChildTaskTable == CS_ChecksumType_EEPROM_TABLE,
+                  "CS_AppData.ChildTaskTable == CS_ChecksumType_EEPROM_TABLE");
+    UtAssert_True(CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID,
+                  "CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID");
+    UtAssert_True(CS_AppData.RecomputeEepromMemoryEntryPtr == &ResEepromTblPtr[CmdPacket.Payload.EntryID],
+                  "CS_AppData.RecomputeEepromMemoryEntryPtr == &ResEepromTblPtr[CmdPacket.Payload.EntryID]");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_RECOMPUTE_EEPROM_CREATE_CHDTASK_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
@@ -361,7 +365,8 @@ void CS_RecomputeBaselineEepromCmd_Test_CreateChildTaskError(void)
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
     UtAssert_True(CS_AppData.HkPacket.Payload.CmdErrCounter == 1, "CS_AppData.HkPacket.Payload.CmdErrCounter == 1");
-    UtAssert_True(CS_AppData.HkPacket.Payload.RecomputeInProgress == false, "CS_AppData.HkPacket.Payload.RecomputeInProgress == false");
+    UtAssert_True(CS_AppData.HkPacket.Payload.RecomputeInProgress == false,
+                  "CS_AppData.HkPacket.Payload.RecomputeInProgress == false");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -371,16 +376,16 @@ void CS_RecomputeBaselineEepromCmd_Test_CreateChildTaskError(void)
 
 void CS_RecomputeBaselineEepromCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineEepromCmd_t CmdPacket;
+    int32                           strCmpResult;
+    char                            ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "EEPROM recompute baseline of entry failed, Entry ID invalid: %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_EEPROM_TABLE_ENTRIES;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    UT_ResetState(UT_KEY(CS_GetResEntryAddr)); /* Remove handler so this will return NULL */
 
     /* Execute the function being tested */
     CS_RecomputeBaselineEepromCmd(&CmdPacket);
@@ -403,18 +408,18 @@ void CS_RecomputeBaselineEepromCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 
 void CS_RecomputeBaselineEepromCmd_Test_InvalidEntryErrorStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineEepromCmd_t    CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "EEPROM recompute baseline of entry failed, Entry ID invalid: %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
     /* Execute the function being tested */
     CS_RecomputeBaselineEepromCmd(&CmdPacket);
@@ -437,18 +442,17 @@ void CS_RecomputeBaselineEepromCmd_Test_InvalidEntryErrorStateEmpty(void)
 
 void CS_RecomputeBaselineEepromCmd_Test_RecomputeInProgress(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineEepromCmd_t CmdPacket;
+    int32                           strCmpResult;
+    char                            ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of EEPROM Entry ID %%d failed: child task in use");
 
     CmdPacket.Payload.EntryID = 1;
 
     CS_AppData.HkPacket.Payload.RecomputeInProgress = true;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_RecomputeBaselineEepromCmd(&CmdPacket);
@@ -471,10 +475,11 @@ void CS_RecomputeBaselineEepromCmd_Test_RecomputeInProgress(void)
 
 void CS_RecomputeBaselineEepromCmd_Test_OneShot(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineEepromCmd_t CmdPacket;
+    int32                           strCmpResult;
+    char                            ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of EEPROM Entry ID %%d failed: child task in use");
 
@@ -482,8 +487,6 @@ void CS_RecomputeBaselineEepromCmd_Test_OneShot(void)
 
     CS_AppData.HkPacket.Payload.RecomputeInProgress = false;
     CS_AppData.HkPacket.Payload.OneShotInProgress   = true;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_RecomputeBaselineEepromCmd(&CmdPacket);
@@ -506,25 +509,28 @@ void CS_RecomputeBaselineEepromCmd_Test_OneShot(void)
 
 void CS_EnableEntryIDEepromCmd_Test_Nominal(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_EnableEntryIDEepromCmd_t        CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Def_EepromMemory_Table_Entry_t *DefEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].DefAddr;
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Checksumming of EEPROM Entry ID %%d is Enabled");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State = 99;
-    CS_AppData.DefEepromTblPtr[CmdPacket.Payload.EntryID].State = 99;
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_DISABLED;
+    DefEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_DISABLED;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    CS_Test_Setup_SetDefEntryState(DefEepromTblPtr[CmdPacket.Payload.EntryID].State);
 
     /* Execute the function being tested */
     CS_EnableEntryIDEepromCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED,
-                  "CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED");
+    UtAssert_True(ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_ENABLED,
+                  "ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_ENABLED");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_ENABLE_EEPROM_ENTRY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -532,9 +538,7 @@ void CS_EnableEntryIDEepromCmd_Test_Nominal(void)
     strCmpResult = strncmp(ExpectedEventString, context_CFE_EVS_SendEvent[0].Spec, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH);
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
-
-    UtAssert_True(CS_AppData.DefEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED,
-                  "CS_AppData.DefEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED");
+    CS_Test_Check_SetDefEntryState(&DefEepromTblPtr[CmdPacket.Payload.EntryID], CS_ChecksumState_ENABLED);
 
     UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
 
@@ -546,10 +550,13 @@ void CS_EnableEntryIDEepromCmd_Test_Nominal(void)
 
 void CS_EnableEntryIDEepromCmd_Test_DefEepromTblPtrStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_EnableEntryIDEepromCmd_t        CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Def_EepromMemory_Table_Entry_t *DefEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].DefAddr;
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Checksumming of EEPROM Entry ID %%d is Enabled");
 
@@ -558,17 +565,19 @@ void CS_EnableEntryIDEepromCmd_Test_DefEepromTblPtrStateEmpty(void)
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State = 99;
-    CS_AppData.DefEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
+    DefEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    CS_Test_Setup_SetDefEntryState(DefEepromTblPtr[CmdPacket.Payload.EntryID].State);
 
     /* Execute the function being tested */
     CS_EnableEntryIDEepromCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED,
-                  "CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED");
+    UtAssert_True(ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_ENABLED,
+                  "ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_ENABLED");
+
+    CS_Test_Check_SetDefEntryState(&DefEepromTblPtr[CmdPacket.Payload.EntryID], CS_ChecksumState_ENABLED);
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_ENABLE_EEPROM_ENTRY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -596,16 +605,16 @@ void CS_EnableEntryIDEepromCmd_Test_DefEepromTblPtrStateEmpty(void)
 
 void CS_EnableEntryIDEepromCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_EnableEntryIDEepromCmd_t CmdPacket;
+    int32                       strCmpResult;
+    char                        ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Enable EEPROM entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_EEPROM_TABLE_ENTRIES;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    UT_ResetState(UT_KEY(CS_GetResEntryAddr)); /* Remove handler so this will return NULL */
 
     /* Execute the function being tested */
     CS_EnableEntryIDEepromCmd(&CmdPacket);
@@ -628,18 +637,18 @@ void CS_EnableEntryIDEepromCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 
 void CS_EnableEntryIDEepromCmd_Test_InvalidEntryErrorStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_EnableEntryIDEepromCmd_t        CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Enable EEPROM entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
     /* Execute the function being tested */
     CS_EnableEntryIDEepromCmd(&CmdPacket);
@@ -662,9 +671,9 @@ void CS_EnableEntryIDEepromCmd_Test_InvalidEntryErrorStateEmpty(void)
 
 void CS_EnableEntryIDEepromCmd_Test_OneShot(void)
 {
-    CS_EntryCmd_t CmdPacket;
+    CS_EnableEntryIDEepromCmd_t CmdPacket;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     UT_SetDeferredRetcode(UT_KEY(CS_CheckRecomputeOneshot), 1, true);
 
     /* Execute the function being tested */
@@ -681,30 +690,34 @@ void CS_EnableEntryIDEepromCmd_Test_OneShot(void)
 
 void CS_DisableEntryIDEepromCmd_Test_Nominal(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_DisableEntryIDEepromCmd_t       CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Def_EepromMemory_Table_Entry_t *DefEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].DefAddr;
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Checksumming of EEPROM Entry ID %%d is Disabled");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State = 99;
-    CS_AppData.DefEepromTblPtr[CmdPacket.Payload.EntryID].State = 99;
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
+    DefEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    CS_Test_Setup_SetDefEntryState(DefEepromTblPtr[CmdPacket.Payload.EntryID].State);
 
     /* Execute the function being tested */
     CS_DisableEntryIDEepromCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED,
-                  "CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0,
-                  "CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0,
-                  "CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0");
+    UtAssert_True(ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_DISABLED,
+                  "ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_DISABLED");
+
+    UtAssert_True(ResEepromTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0,
+                  "ResEepromTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0");
+    UtAssert_True(ResEepromTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0,
+                  "ResEepromTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_DISABLE_EEPROM_ENTRY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -713,8 +726,7 @@ void CS_DisableEntryIDEepromCmd_Test_Nominal(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.DefEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED,
-                  "CS_AppData.DefEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED");
+    CS_Test_Check_SetDefEntryState(&DefEepromTblPtr[CmdPacket.Payload.EntryID], CS_ChecksumState_DISABLED);
 
     UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
 
@@ -726,10 +738,13 @@ void CS_DisableEntryIDEepromCmd_Test_Nominal(void)
 
 void CS_DisableEntryIDEepromCmd_Test_DefEepromTblPtrStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_DisableEntryIDEepromCmd_t       CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Def_EepromMemory_Table_Entry_t *DefEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].DefAddr;
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Checksumming of EEPROM Entry ID %%d is Disabled");
 
@@ -738,21 +753,23 @@ void CS_DisableEntryIDEepromCmd_Test_DefEepromTblPtrStateEmpty(void)
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State = 99;
-    CS_AppData.DefEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
+    DefEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    CS_Test_Setup_SetDefEntryState(DefEepromTblPtr[CmdPacket.Payload.EntryID].State);
 
     /* Execute the function being tested */
     CS_DisableEntryIDEepromCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED,
-                  "CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0,
-                  "CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0,
-                  "CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0");
+    UtAssert_True(ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_DISABLED,
+                  "ResEepromTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_DISABLED");
+    CS_Test_Check_SetDefEntryState(&DefEepromTblPtr[CmdPacket.Payload.EntryID], CS_ChecksumState_DISABLED);
+
+    UtAssert_True(ResEepromTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0,
+                  "ResEepromTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0");
+    UtAssert_True(ResEepromTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0,
+                  "ResEepromTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_DISABLE_EEPROM_ENTRY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -780,16 +797,15 @@ void CS_DisableEntryIDEepromCmd_Test_DefEepromTblPtrStateEmpty(void)
 
 void CS_DisableEntryIDEepromCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_DisableEntryIDEepromCmd_t CmdPacket;
+    int32                        strCmpResult;
+    char                         ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Disable EEPROM entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_EEPROM_TABLE_ENTRIES;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_DisableEntryIDEepromCmd(&CmdPacket);
@@ -812,18 +828,18 @@ void CS_DisableEntryIDEepromCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 
 void CS_DisableEntryIDEepromCmd_Test_InvalidEntryErrorStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_DisableEntryIDEepromCmd_t       CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Disable EEPROM entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResEepromTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
     /* Execute the function being tested */
     CS_DisableEntryIDEepromCmd(&CmdPacket);
@@ -846,9 +862,9 @@ void CS_DisableEntryIDEepromCmd_Test_InvalidEntryErrorStateEmpty(void)
 
 void CS_DisableEntryIDEepromCmd_Test_OneShot(void)
 {
-    CS_EntryCmd_t CmdPacket;
+    CS_DisableEntryIDEepromCmd_t CmdPacket;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     UT_SetDeferredRetcode(UT_KEY(CS_CheckRecomputeOneshot), 1, true);
 
     /* Execute the function being tested */
@@ -865,20 +881,20 @@ void CS_DisableEntryIDEepromCmd_Test_OneShot(void)
 
 void CS_GetEntryIDEepromCmd_Test_Nominal(void)
 {
-    CS_GetEntryIDCmd_t CmdPacket;
-    int32              strCmpResult;
-    char               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_GetEntryIDEepromCmd_t           CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "EEPROM Found Address 0x%%08X in Entry ID %%d");
 
     int16 EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[EntryID].StartAddress       = 1;
-    CmdPacket.Payload.Address                                      = 1;
-    CS_AppData.ResEepromTblPtr[EntryID].NumBytesToChecksum = 0;
-    CS_AppData.ResEepromTblPtr[EntryID].State              = 99;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResEepromTblPtr[EntryID].StartAddress       = 1;
+    CmdPacket.Payload.Address                   = 1;
+    ResEepromTblPtr[EntryID].NumBytesToChecksum = 10;
+    ResEepromTblPtr[EntryID].State              = CS_ChecksumState_ENABLED;
 
     /* Execute the function being tested */
     CS_GetEntryIDEepromCmd(&CmdPacket);
@@ -901,15 +917,18 @@ void CS_GetEntryIDEepromCmd_Test_Nominal(void)
 
 void CS_GetEntryIDEepromCmd_Test_AddressNotFound(void)
 {
-    CS_GetEntryIDCmd_t CmdPacket;
-    int32              strCmpResult;
-    char               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_GetEntryIDEepromCmd_t           CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Address 0x%%08X was not found in EEPROM table");
 
-    CmdPacket.Payload.Address = 0xFFFFFFFF;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    CmdPacket.Payload.Address             = 0xFFFFFFFF;
+    ResEepromTblPtr[0].State              = CS_ChecksumState_ENABLED;
+    ResEepromTblPtr[0].StartAddress       = 1;
+    ResEepromTblPtr[0].NumBytesToChecksum = 10;
 
     /* Execute the function being tested */
     CS_GetEntryIDEepromCmd(&CmdPacket);
@@ -932,20 +951,20 @@ void CS_GetEntryIDEepromCmd_Test_AddressNotFound(void)
 
 void CS_GetEntryIDEepromCmd_Test_AddressPtr(void)
 {
-    CS_GetEntryIDCmd_t CmdPacket;
-    int32              strCmpResult;
-    char               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_GetEntryIDEepromCmd_t           CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Address 0x%%08X was not found in EEPROM table");
 
     int16 EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[EntryID].StartAddress       = 2;
-    CmdPacket.Payload.Address                                      = 1;
-    CS_AppData.ResEepromTblPtr[EntryID].NumBytesToChecksum = 0;
-    CS_AppData.ResEepromTblPtr[EntryID].State              = 99;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResEepromTblPtr[EntryID].StartAddress       = 2;
+    CmdPacket.Payload.Address                   = 1;
+    ResEepromTblPtr[EntryID].NumBytesToChecksum = 10;
+    ResEepromTblPtr[EntryID].State              = CS_ChecksumState_ENABLED;
 
     /* Execute the function being tested */
     CS_GetEntryIDEepromCmd(&CmdPacket);
@@ -968,20 +987,20 @@ void CS_GetEntryIDEepromCmd_Test_AddressPtr(void)
 
 void CS_GetEntryIDEepromCmd_Test_State(void)
 {
-    CS_GetEntryIDCmd_t CmdPacket;
-    int32              strCmpResult;
-    char               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_GetEntryIDEepromCmd_t           CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr = CS_AppData.Tbl[CS_ChecksumType_EEPROM_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Address 0x%%08X was not found in EEPROM table");
 
     int16 EntryID = 1;
 
-    CS_AppData.ResEepromTblPtr[EntryID].StartAddress       = 1;
-    CmdPacket.Payload.Address                                      = 1;
-    CS_AppData.ResEepromTblPtr[EntryID].NumBytesToChecksum = 0;
-    CS_AppData.ResEepromTblPtr[EntryID].State              = CS_STATE_EMPTY;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResEepromTblPtr[EntryID].StartAddress       = 1;
+    CmdPacket.Payload.Address                   = 1;
+    ResEepromTblPtr[EntryID].NumBytesToChecksum = 10;
+    ResEepromTblPtr[EntryID].State              = CS_ChecksumState_EMPTY;
 
     /* Execute the function being tested */
     CS_GetEntryIDEepromCmd(&CmdPacket);

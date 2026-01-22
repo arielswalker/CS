@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -24,7 +23,7 @@
 #include "cs_memory_cmds.h"
 #include "cs_msg.h"
 #include "cs_msgdefs.h"
-#include "cs_events.h"
+#include "cs_eventids.h"
 #include "cs_version.h"
 #include "cs_utils.h"
 #include "cs_test_utils.h"
@@ -45,20 +44,19 @@ uint8 call_count_CFE_EVS_SendEvent;
 
 void CS_DisableMemoryCmd_Test(void)
 {
-    CS_NoArgsCmd_t CmdPacket;
-    int32          strCmpResult;
-    char           ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_DisableMemoryCmd_t CmdPacket;
+    int32                 strCmpResult;
+    char                  ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Checksumming of Memory is Disabled");
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_DisableMemoryCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.MemoryCSState == CS_STATE_DISABLED,
-                  "CS_AppData.HkPacket.Payload.MemoryCSState = CS_STATE_DISABLED");
+    UtAssert_True(CS_AppData.HkPacket.Payload.MemoryCSState == CS_ChecksumState_DISABLED,
+                  "CS_AppData.HkPacket.Payload.MemoryCSState = CS_ChecksumState_DISABLED");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_DISABLE_MEMORY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -77,9 +75,9 @@ void CS_DisableMemoryCmd_Test(void)
 
 void CS_DisableMemoryCmd_Test_OneShot(void)
 {
-    CS_NoArgsCmd_t CmdPacket;
+    CS_DisableMemoryCmd_t CmdPacket;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     UT_SetDeferredRetcode(UT_KEY(CS_CheckRecomputeOneshot), 1, true);
 
     /* Execute the function being tested */
@@ -96,20 +94,19 @@ void CS_DisableMemoryCmd_Test_OneShot(void)
 
 void CS_EnableMemoryCmd_Test(void)
 {
-    CS_NoArgsCmd_t CmdPacket;
-    int32          strCmpResult;
-    char           ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_EnableMemoryCmd_t CmdPacket;
+    int32                strCmpResult;
+    char                 ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Checksumming of Memory is Enabled");
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_EnableMemoryCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.MemoryCSState == CS_STATE_ENABLED,
-                  "CS_AppData.HkPacket.Payload.MemoryCSState = CS_STATE_ENABLED");
+    UtAssert_True(CS_AppData.HkPacket.Payload.MemoryCSState == CS_ChecksumState_ENABLED,
+                  "CS_AppData.HkPacket.Payload.MemoryCSState = CS_ChecksumState_ENABLED");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_ENABLE_MEMORY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -128,9 +125,9 @@ void CS_EnableMemoryCmd_Test(void)
 
 void CS_EnableMemoryCmd_Test_OneShot(void)
 {
-    CS_NoArgsCmd_t CmdPacket;
+    CS_EnableMemoryCmd_t CmdPacket;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     UT_SetDeferredRetcode(UT_KEY(CS_CheckRecomputeOneshot), 1, true);
 
     /* Execute the function being tested */
@@ -147,19 +144,19 @@ void CS_EnableMemoryCmd_Test_OneShot(void)
 
 void CS_ReportBaselineEntryIDMemoryCmd_Test_Computed(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_ReportBaselineEntryIDMemoryCmd_t CmdPacket;
+    int32                               strCmpResult;
+    char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t * ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Report baseline of Memory Entry %%d is 0x%%08X");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State           = 99;
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].ComputedYet     = true;
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].ComparisonValue = 1;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State           = CS_ChecksumState_ENABLED;
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].ComputedYet     = true;
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].ComparisonValue = 1;
 
     /* Execute the function being tested */
     CS_ReportBaselineEntryIDMemoryCmd(&CmdPacket);
@@ -182,20 +179,20 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_Computed(void)
 
 void CS_ReportBaselineEntryIDMemoryCmd_Test_NotYetComputed(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_ReportBaselineEntryIDMemoryCmd_t CmdPacket;
+    int32                               strCmpResult;
+    char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t * ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Report baseline of Memory Entry %%d has not been computed yet");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State           = 99;
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].ComputedYet     = false;
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].ComparisonValue = 1;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State           = CS_ChecksumState_ENABLED;
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].ComputedYet     = false;
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].ComparisonValue = 1;
 
     /* Execute the function being tested */
     CS_ReportBaselineEntryIDMemoryCmd(&CmdPacket);
@@ -218,16 +215,15 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_NotYetComputed(void)
 
 void CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_ReportBaselineEntryIDMemoryCmd_t CmdPacket;
+    int32                               strCmpResult;
+    char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Memory report baseline failed, Entry ID invalid: %%d, State: %%d Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_MEMORY_TABLE_ENTRIES;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_ReportBaselineEntryIDMemoryCmd(&CmdPacket);
@@ -250,18 +246,18 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void
 
 void CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_ReportBaselineEntryIDMemoryCmd_t CmdPacket;
+    int32                               strCmpResult;
+    char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t * ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Memory report baseline failed, Entry ID invalid: %%d, State: %%d Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
     /* Execute the function being tested */
     CS_ReportBaselineEntryIDMemoryCmd(&CmdPacket);
@@ -284,30 +280,34 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 
 void CS_RecomputeBaselineMemoryCmd_Test_Nominal(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineMemoryCmd_t    CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of Memory Entry ID %%d started");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = 99;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
 
     /* Execute the function being tested */
     CS_RecomputeBaselineMemoryCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.RecomputeInProgress == true, "CS_AppData.HkPacket.Payload.RecomputeInProgress == true");
-    UtAssert_True(CS_AppData.HkPacket.Payload.OneShotInProgress == false, "CS_AppData.HkPacket.Payload.OneShotInProgress == false");
+    UtAssert_True(CS_AppData.HkPacket.Payload.RecomputeInProgress == true,
+                  "CS_AppData.HkPacket.Payload.RecomputeInProgress == true");
+    UtAssert_True(CS_AppData.HkPacket.Payload.OneShotInProgress == false,
+                  "CS_AppData.HkPacket.Payload.OneShotInProgress == false");
 
-    UtAssert_True(CS_AppData.ChildTaskTable == CS_MEMORY_TABLE, "CS_AppData.ChildTaskTable == CS_MEMORY_TABLE");
-    UtAssert_True(CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID, "CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID");
-    UtAssert_True(CS_AppData.RecomputeEepromMemoryEntryPtr == &CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID],
-                  "CS_AppData.RecomputeEepromMemoryEntryPtr == &CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID]");
+    UtAssert_True(CS_AppData.ChildTaskTable == CS_ChecksumType_MEMORY_TABLE,
+                  "CS_AppData.ChildTaskTable == CS_ChecksumType_MEMORY_TABLE");
+    UtAssert_True(CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID,
+                  "CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID");
+    UtAssert_True(CS_AppData.RecomputeEepromMemoryEntryPtr == &ResMemoryTblPtr[CmdPacket.Payload.EntryID],
+                  "CS_AppData.RecomputeEepromMemoryEntryPtr == &ResMemoryTblPtr[CmdPacket.Payload.EntryID]");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_RECOMPUTE_MEMORY_STARTED_DBG_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_DEBUG);
@@ -326,32 +326,35 @@ void CS_RecomputeBaselineMemoryCmd_Test_Nominal(void)
 
 void CS_RecomputeBaselineMemoryCmd_Test_CreateChildTaskError(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineMemoryCmd_t    CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of Memory Entry ID %%d failed, ES_CreateChildTask returned:  0x%%08X");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = 99;
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
 
     /* Set to generate error message CS_RECOMPUTE_MEMORY_CREATE_CHDTASK_ERR_EID */
     UT_SetDeferredRetcode(UT_KEY(CFE_ES_CreateChildTask), 1, -1);
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_RecomputeBaselineMemoryCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.OneShotInProgress == false, "CS_AppData.HkPacket.Payload.OneShotInProgress == false");
+    UtAssert_True(CS_AppData.HkPacket.Payload.OneShotInProgress == false,
+                  "CS_AppData.HkPacket.Payload.OneShotInProgress == false");
 
-    UtAssert_True(CS_AppData.ChildTaskTable == CS_MEMORY_TABLE, "CS_AppData.ChildTaskTable == CS_MEMORY_TABLE");
-    UtAssert_True(CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID, "CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID");
-    UtAssert_True(CS_AppData.RecomputeEepromMemoryEntryPtr == &CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID],
-                  "CS_AppData.RecomputeEepromMemoryEntryPtr == &CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID]");
+    UtAssert_True(CS_AppData.ChildTaskTable == CS_ChecksumType_MEMORY_TABLE,
+                  "CS_AppData.ChildTaskTable == CS_ChecksumType_MEMORY_TABLE");
+    UtAssert_True(CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID,
+                  "CS_AppData.ChildTaskEntryID == CmdPacket.Payload.EntryID");
+    UtAssert_True(CS_AppData.RecomputeEepromMemoryEntryPtr == &ResMemoryTblPtr[CmdPacket.Payload.EntryID],
+                  "CS_AppData.RecomputeEepromMemoryEntryPtr == &ResMemoryTblPtr[CmdPacket.Payload.EntryID]");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_RECOMPUTE_MEMORY_CREATE_CHDTASK_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
@@ -361,7 +364,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_CreateChildTaskError(void)
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
     UtAssert_True(CS_AppData.HkPacket.Payload.CmdErrCounter == 1, "CS_AppData.HkPacket.Payload.CmdErrCounter == 1");
-    UtAssert_True(CS_AppData.HkPacket.Payload.RecomputeInProgress == false, "CS_AppData.HkPacket.Payload.RecomputeInProgress == false");
+    UtAssert_True(CS_AppData.HkPacket.Payload.RecomputeInProgress == false,
+                  "CS_AppData.HkPacket.Payload.RecomputeInProgress == false");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -371,16 +375,15 @@ void CS_RecomputeBaselineMemoryCmd_Test_CreateChildTaskError(void)
 
 void CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineMemoryCmd_t CmdPacket;
+    int32                           strCmpResult;
+    char                            ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Memory recompute baseline of entry failed, Entry ID invalid: %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_MEMORY_TABLE_ENTRIES;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_RecomputeBaselineMemoryCmd(&CmdPacket);
@@ -403,18 +406,18 @@ void CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 
 void CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineMemoryCmd_t    CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Memory recompute baseline of entry failed, Entry ID invalid: %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
     /* Execute the function being tested */
     CS_RecomputeBaselineMemoryCmd(&CmdPacket);
@@ -437,18 +440,17 @@ void CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 
 void CS_RecomputeBaselineMemoryCmd_Test_RecomputeInProgress(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineMemoryCmd_t CmdPacket;
+    int32                           strCmpResult;
+    char                            ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of Memory Entry ID %%d failed: child task in use");
 
     CmdPacket.Payload.EntryID = 1;
 
     CS_AppData.HkPacket.Payload.RecomputeInProgress = true;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_RecomputeBaselineMemoryCmd(&CmdPacket);
@@ -471,10 +473,11 @@ void CS_RecomputeBaselineMemoryCmd_Test_RecomputeInProgress(void)
 
 void CS_RecomputeBaselineMemoryCmd_Test_OneShot(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_RecomputeBaselineMemoryCmd_t CmdPacket;
+    int32                           strCmpResult;
+    char                            ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of Memory Entry ID %%d failed: child task in use");
 
@@ -482,8 +485,6 @@ void CS_RecomputeBaselineMemoryCmd_Test_OneShot(void)
 
     CS_AppData.HkPacket.Payload.RecomputeInProgress = false;
     CS_AppData.HkPacket.Payload.OneShotInProgress   = true;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_RecomputeBaselineMemoryCmd(&CmdPacket);
@@ -506,25 +507,28 @@ void CS_RecomputeBaselineMemoryCmd_Test_OneShot(void)
 
 void CS_EnableEntryIDMemoryCmd_Test_Nominal(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_EnableEntryIDMemoryCmd_t        CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Def_EepromMemory_Table_Entry_t *DefMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].DefAddr;
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Checksumming of Memory Entry ID %%d is Enabled");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = 99;
-    CS_AppData.DefMemoryTblPtr[CmdPacket.Payload.EntryID].State = 99;
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_DISABLED;
+    DefMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_DISABLED;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    CS_Test_Setup_SetDefEntryState(DefMemoryTblPtr[CmdPacket.Payload.EntryID].State);
 
     /* Execute the function being tested */
     CS_EnableEntryIDMemoryCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED,
-                  "CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED");
+    UtAssert_True(ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_ENABLED,
+                  "ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_ENABLED");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_ENABLE_MEMORY_ENTRY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -533,8 +537,7 @@ void CS_EnableEntryIDMemoryCmd_Test_Nominal(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.DefMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED,
-                  "CS_AppData.DefMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED");
+    CS_Test_Check_SetDefEntryState(&DefMemoryTblPtr[CmdPacket.Payload.EntryID], CS_ChecksumState_ENABLED);
 
     UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
 
@@ -546,10 +549,13 @@ void CS_EnableEntryIDMemoryCmd_Test_Nominal(void)
 
 void CS_EnableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_EnableEntryIDMemoryCmd_t        CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Def_EepromMemory_Table_Entry_t *DefMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].DefAddr;
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Checksumming of Memory Entry ID %%d is Enabled");
 
@@ -558,17 +564,19 @@ void CS_EnableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty(void)
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = 99;
-    CS_AppData.DefMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
+    DefMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    CS_Test_Setup_SetDefEntryState(DefMemoryTblPtr[CmdPacket.Payload.EntryID].State);
 
     /* Execute the function being tested */
     CS_EnableEntryIDMemoryCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED,
-                  "CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_ENABLED");
+    UtAssert_True(ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_ENABLED,
+                  "ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_ENABLED");
+
+    CS_Test_Check_SetDefEntryState(&DefMemoryTblPtr[CmdPacket.Payload.EntryID], CS_ChecksumState_ENABLED);
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_ENABLE_MEMORY_ENTRY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -596,16 +604,15 @@ void CS_EnableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty(void)
 
 void CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_EnableEntryIDMemoryCmd_t CmdPacket;
+    int32                       strCmpResult;
+    char                        ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Enable Memory entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_MEMORY_TABLE_ENTRIES;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_EnableEntryIDMemoryCmd(&CmdPacket);
@@ -628,18 +635,18 @@ void CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 
 void CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_EnableEntryIDMemoryCmd_t        CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Enable Memory entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
     /* Execute the function being tested */
     CS_EnableEntryIDMemoryCmd(&CmdPacket);
@@ -662,9 +669,9 @@ void CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 
 void CS_EnableEntryIDMemoryCmd_Test_OneShot(void)
 {
-    CS_EntryCmd_t CmdPacket;
+    CS_EnableEntryIDMemoryCmd_t CmdPacket;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     UT_SetDeferredRetcode(UT_KEY(CS_CheckRecomputeOneshot), 1, true);
 
     /* Execute the function being tested */
@@ -681,30 +688,33 @@ void CS_EnableEntryIDMemoryCmd_Test_OneShot(void)
 
 void CS_DisableEntryIDMemoryCmd_Test_Nominal(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_DisableEntryIDMemoryCmd_t       CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Def_EepromMemory_Table_Entry_t *DefMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].DefAddr;
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Checksumming of Memory Entry ID %%d is Disabled");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = 99;
-    CS_AppData.DefMemoryTblPtr[CmdPacket.Payload.EntryID].State = 99;
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
+    DefMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    CS_Test_Setup_SetDefEntryState(DefMemoryTblPtr[CmdPacket.Payload.EntryID].State);
 
     /* Execute the function being tested */
     CS_DisableEntryIDMemoryCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED,
-                  "CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0,
-                  "CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0,
-                  "CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0");
+    UtAssert_True(ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_DISABLED,
+                  "ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_DISABLED");
+    UtAssert_True(ResMemoryTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0,
+                  "ResMemoryTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0");
+    UtAssert_True(ResMemoryTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0,
+                  "ResMemoryTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_DISABLE_MEMORY_ENTRY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -713,8 +723,7 @@ void CS_DisableEntryIDMemoryCmd_Test_Nominal(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.DefMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED,
-                  "CS_AppData.DefMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED");
+    CS_Test_Check_SetDefEntryState(&DefMemoryTblPtr[CmdPacket.Payload.EntryID], CS_ChecksumState_DISABLED);
 
     UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
 
@@ -726,10 +735,13 @@ void CS_DisableEntryIDMemoryCmd_Test_Nominal(void)
 
 void CS_DisableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_DisableEntryIDMemoryCmd_t       CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[2][CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Def_EepromMemory_Table_Entry_t *DefMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].DefAddr;
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Checksumming of Memory Entry ID %%d is Disabled");
 
@@ -738,21 +750,21 @@ void CS_DisableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty(void)
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = 99;
-    CS_AppData.DefMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_ENABLED;
+    DefMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    CS_Test_Setup_SetDefEntryState(DefMemoryTblPtr[CmdPacket.Payload.EntryID].State);
 
     /* Execute the function being tested */
     CS_DisableEntryIDMemoryCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED,
-                  "CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_STATE_DISABLED");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0,
-                  "CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0");
-    UtAssert_True(CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0,
-                  "CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0");
+    UtAssert_True(ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_DISABLED,
+                  "ResMemoryTblPtr[CmdPacket.Payload.EntryID].State == CS_ChecksumState_DISABLED");
+    UtAssert_True(ResMemoryTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0,
+                  "ResMemoryTblPtr[CmdPacket.Payload.EntryID].TempChecksumValue == 0");
+    UtAssert_True(ResMemoryTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0,
+                  "ResMemoryTblPtr[CmdPacket.Payload.EntryID].ByteOffset == 0");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_DISABLE_MEMORY_ENTRY_INF_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_INFORMATION);
@@ -780,16 +792,15 @@ void CS_DisableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty(void)
 
 void CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_DisableEntryIDMemoryCmd_t CmdPacket;
+    int32                        strCmpResult;
+    char                         ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Disable Memory entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_MEMORY_TABLE_ENTRIES;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
 
     /* Execute the function being tested */
     CS_DisableEntryIDMemoryCmd(&CmdPacket);
@@ -812,18 +823,18 @@ void CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 
 void CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 {
-    CS_EntryCmd_t CmdPacket;
-    int32         strCmpResult;
-    char          ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_DisableEntryIDMemoryCmd_t       CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Disable Memory entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_STATE_EMPTY;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResMemoryTblPtr[CmdPacket.Payload.EntryID].State = CS_ChecksumState_EMPTY;
 
     /* Execute the function being tested */
     CS_DisableEntryIDMemoryCmd(&CmdPacket);
@@ -846,9 +857,9 @@ void CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 
 void CS_DisableEntryIDMemoryCmd_Test_OneShot(void)
 {
-    CS_EntryCmd_t CmdPacket;
+    CS_DisableEntryIDMemoryCmd_t CmdPacket;
 
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     UT_SetDeferredRetcode(UT_KEY(CS_CheckRecomputeOneshot), 1, true);
 
     /* Execute the function being tested */
@@ -865,20 +876,19 @@ void CS_DisableEntryIDMemoryCmd_Test_OneShot(void)
 
 void CS_GetEntryIDMemoryCmd_Test_Nominal(void)
 {
-    CS_GetEntryIDCmd_t CmdPacket;
-    int32              strCmpResult;
-    char               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_GetEntryIDMemoryCmd_t           CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Memory Found Address 0x%%08X in Entry ID %%d");
 
     int16 EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[EntryID].StartAddress       = 1;
-    CmdPacket.Payload.Address                                      = 1;
-    CS_AppData.ResMemoryTblPtr[EntryID].NumBytesToChecksum = 0;
-    CS_AppData.ResMemoryTblPtr[EntryID].State              = 99;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResMemoryTblPtr[EntryID].StartAddress       = 1;
+    CmdPacket.Payload.Address                   = 1;
+    ResMemoryTblPtr[EntryID].NumBytesToChecksum = 10;
+    ResMemoryTblPtr[EntryID].State              = CS_ChecksumState_ENABLED;
 
     /* Execute the function being tested */
     CS_GetEntryIDMemoryCmd(&CmdPacket);
@@ -901,15 +911,18 @@ void CS_GetEntryIDMemoryCmd_Test_Nominal(void)
 
 void CS_GetEntryIDMemoryCmd_Test_AddressNotFound(void)
 {
-    CS_GetEntryIDCmd_t CmdPacket;
-    int32              strCmpResult;
-    char               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_GetEntryIDMemoryCmd_t           CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Address 0x%%08X was not found in Memory table");
 
-    CmdPacket.Payload.Address = 0xFFFFFFFF;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    CmdPacket.Payload.Address             = 0xFFFFFFFF;
+    ResMemoryTblPtr[0].State              = CS_ChecksumState_ENABLED;
+    ResMemoryTblPtr[0].StartAddress       = 1;
+    ResMemoryTblPtr[0].NumBytesToChecksum = 10;
 
     /* Execute the function being tested */
     CS_GetEntryIDMemoryCmd(&CmdPacket);
@@ -932,20 +945,20 @@ void CS_GetEntryIDMemoryCmd_Test_AddressNotFound(void)
 
 void CS_GetEntryIDMemoryCmd_Test_AddressPtr(void)
 {
-    CS_GetEntryIDCmd_t CmdPacket;
-    int32              strCmpResult;
-    char               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_GetEntryIDMemoryCmd_t           CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Address 0x%%08X was not found in Memory table");
 
     int16 EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[EntryID].StartAddress       = 2;
-    CmdPacket.Payload.Address                                      = 1;
-    CS_AppData.ResMemoryTblPtr[EntryID].NumBytesToChecksum = 0;
-    CS_AppData.ResMemoryTblPtr[EntryID].State              = 99;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResMemoryTblPtr[EntryID].StartAddress       = 12;
+    CmdPacket.Payload.Address                   = 1;
+    ResMemoryTblPtr[EntryID].NumBytesToChecksum = 10;
+    ResMemoryTblPtr[EntryID].State              = CS_ChecksumState_ENABLED;
 
     /* Execute the function being tested */
     CS_GetEntryIDMemoryCmd(&CmdPacket);
@@ -968,20 +981,20 @@ void CS_GetEntryIDMemoryCmd_Test_AddressPtr(void)
 
 void CS_GetEntryIDMemoryCmd_Test_State(void)
 {
-    CS_GetEntryIDCmd_t CmdPacket;
-    int32              strCmpResult;
-    char               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_GetEntryIDMemoryCmd_t           CmdPacket;
+    int32                              strCmpResult;
+    char                               ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
+    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
+    memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Address 0x%%08X was not found in Memory table");
 
     int16 EntryID = 1;
 
-    CS_AppData.ResMemoryTblPtr[EntryID].StartAddress       = 1;
-    CmdPacket.Payload.Address                                      = 1;
-    CS_AppData.ResMemoryTblPtr[EntryID].NumBytesToChecksum = 0;
-    CS_AppData.ResMemoryTblPtr[EntryID].State              = CS_STATE_EMPTY;
-
-    UT_SetDeferredRetcode(UT_KEY(CS_VerifyCmdLength), 1, true);
+    ResMemoryTblPtr[EntryID].StartAddress       = 1;
+    CmdPacket.Payload.Address                   = 1;
+    ResMemoryTblPtr[EntryID].NumBytesToChecksum = 10;
+    ResMemoryTblPtr[EntryID].State              = CS_ChecksumState_EMPTY;
 
     /* Execute the function being tested */
     CS_GetEntryIDMemoryCmd(&CmdPacket);

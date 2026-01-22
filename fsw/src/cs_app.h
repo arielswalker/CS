@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -32,9 +31,8 @@
 **************************************************************************/
 
 #include "cfe.h"
-#include "cs_tbldefs.h"
+#include "cs_tbl.h"
 #include "cs_msg.h"
-#include "cs_msgdefs.h"
 #include "cs_platform_cfg.h"
 #include "cs_mission_cfg.h"
 #include "cs_msgids.h"
@@ -62,8 +60,7 @@
  * \name CS Command Pipe Parameters
  * \{
  */
-#define CS_CMD_PIPE_NAME     "CS_CMD_PIPE"
-#define CS_CMD_PIPE_NAME_LEN 16
+#define CS_CMD_PIPE_NAME "CS_CMD_PIPE"
 /**\}*/
 
 /**
@@ -101,14 +98,11 @@ typedef struct
 {
     CS_HkPacket_t HkPacket; /**< \brief Housekeeping telemetry packet */
 
-    char   PipeName[CS_CMD_PIPE_NAME_LEN]; /**< \brief Command pipe name */
-    uint16 PipeDepth;                      /**< \brief Command pipe depth */
+    CS_ChecksumType_Enum_t ChildTaskTable;   /**< \brief Table for the child task to process */
+    uint16                 ChildTaskEntryID; /**< \brief Entry in table for child task to process */
+    CFE_ES_TaskId_t        ChildTaskID;      /**< \brief Task ID for the child task */
 
-    uint16          ChildTaskTable;   /**< \brief Table for the child task to process */
-    uint16          ChildTaskEntryID; /**< \brief Entry in table for child task to process */
-    CFE_ES_TaskId_t ChildTaskID;      /**< \brief Task ID for the child task */
-
-    uint32 MaxBytesPerCycle; /**< \brief Max number of bytes to process in a cycle */
+    size_t MaxBytesPerCycle; /**< \brief Max number of bytes to process in a cycle */
 
     uint32 RunStatus; /**< \brief Application run status */
 
@@ -122,29 +116,7 @@ typedef struct
 
     CFE_SB_PipeId_t CmdPipe; /**< \brief Command pipe ID */
 
-    CFE_TBL_Handle_t DefEepromTableHandle; /**< \brief Handle to the EEPROM definition table */
-    CFE_TBL_Handle_t ResEepromTableHandle; /**< \brief Handle to the EEPROM results table */
-
-    CFE_TBL_Handle_t DefMemoryTableHandle; /**< \brief Handle to the Memory definition table */
-    CFE_TBL_Handle_t ResMemoryTableHandle; /**< \brief Handle to the Memory results table */
-
-    CFE_TBL_Handle_t DefTablesTableHandle; /**< \brief Handle to the Tables definition table */
-    CFE_TBL_Handle_t ResTablesTableHandle; /**< \brief Handle to the Tables results table */
-
-    CFE_TBL_Handle_t DefAppTableHandle; /**< \brief Handle to the Apps definition table */
-    CFE_TBL_Handle_t ResAppTableHandle; /**< \brief Hanlde to the Apps results table */
-
-    CS_Def_EepromMemory_Table_Entry_t *DefEepromTblPtr; /**< \brief Pointer to the EEPROM definition table */
-    CS_Res_EepromMemory_Table_Entry_t *ResEepromTblPtr; /**< \brief Pointer to the EEPROM results table */
-
-    CS_Def_EepromMemory_Table_Entry_t *DefMemoryTblPtr; /**< \brief Pointer to the Memory definition table */
-    CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr; /**< \brief Pointer to the Memory results table */
-
-    CS_Def_Tables_Table_Entry_t *DefTablesTblPtr; /**< \brief Pointer to the Tables definition table */
-    CS_Res_Tables_Table_Entry_t *ResTablesTblPtr; /**< \brief Pointer to the Tables results table */
-
-    CS_Def_App_Table_Entry_t *DefAppTblPtr; /**< \brief Pointer to the Apps definition table */
-    CS_Res_App_Table_Entry_t *ResAppTblPtr; /**< \brief Pointer to the Apps results table */
+    CS_TableWrapper_t Tbl[CS_NUM_TABLES];
 
     CS_Res_EepromMemory_Table_Entry_t OSCodeSeg;      /**< \brief OS code segment 'table' */
     CS_Res_EepromMemory_Table_Entry_t CfeCoreCodeSeg; /**< \brief cFE core code segment 'table' */
@@ -160,11 +132,6 @@ typedef struct
 
     /* The following pointers locate the results for CS tables that get checksummed because they are listed in the CS
      * Tables table */
-
-    CS_Res_Tables_Table_Entry_t *EepResTablesTblPtr; /**< \brief CS results entry for the CS eeprom */
-    CS_Res_Tables_Table_Entry_t *MemResTablesTblPtr; /**< \brief CS results entry for the CS memory */
-    CS_Res_Tables_Table_Entry_t *AppResTablesTblPtr; /**< \brief CS results entry for the CS apps */
-    CS_Res_Tables_Table_Entry_t *TblResTablesTblPtr; /**< \brief CS results table entry for the CS tables */
 
 #if (CS_PRESERVE_STATES_ON_PROCESSOR_RESET == true)
     CFE_ES_CDSHandle_t DataStoreHandle; /**< \brief Handle to critical data store created by CS */
@@ -187,6 +154,192 @@ extern CS_AppData_t CS_AppData;
  **  Function Prototypes
  **
  **************************************************************************/
+
+/**
+ * \brief Method to get the table ID from the wrapper pointer
+ *
+ * \returns ID of table
+ */
+static inline CS_ChecksumType_Enum_t CS_GetTableId(const CS_TableWrapper_t *tw)
+{
+    return (tw - CS_AppData.Tbl);
+}
+
+/**
+ * \brief Checks if the table wrapper refers to the given table ID
+ * \param tw Pointer to table wrapper struct
+ * \param TableId Identifier of table to check if match to
+ * \retval true if match
+ * \retval false if not a match
+ */
+static inline bool CS_CheckTableId(const CS_TableWrapper_t *tw, CS_ChecksumType_Enum_t TableId)
+{
+    return (tw == &CS_AppData.Tbl[TableId]);
+}
+
+/**
+ * \brief Gets the definition table handle for the given table ID
+ * \param TableId Identifier of table
+ * \returns Definition table handle
+ */
+static inline CFE_TBL_Handle_t CS_GetDefHandle(CS_ChecksumType_Enum_t TableId)
+{
+    return CS_AppData.Tbl[TableId].DefHandle;
+}
+
+/**
+ * \brief Gets the result table handle for the given table ID
+ * \param TableId Identifier of table
+ * \returns Result table handle
+ */
+static inline CFE_TBL_Handle_t CS_GetResHandle(CS_ChecksumType_Enum_t TableId)
+{
+    return CS_AppData.Tbl[TableId].ResHandle;
+}
+
+/**
+ * \brief Gets the definition table name handle for the given table ID
+ * \param TableId Identifier of table
+ * \returns Pointer to definition table name
+ * \retval  NULL if no name defined
+ */
+static inline const char *CS_GetDefName(CS_ChecksumType_Enum_t TableId)
+{
+    return CS_AppData.Tbl[TableId].DefTableName;
+}
+
+/**
+ * \brief Gets the result table name handle for the given table ID
+ * \param TableId Identifier of table
+ * \returns Pointer to result table name
+ * \retval  NULL if no name defined
+ */
+static inline const char *CS_GetResName(CS_ChecksumType_Enum_t TableId)
+{
+    return CS_AppData.Tbl[TableId].ResTableName;
+}
+
+/**
+ * \brief Gets the definition table pointer for the given table ID
+ * \param TableId Identifier of table
+ * \returns Pointer to definition data
+ * \retval  NULL if no definition table registered or loaded
+ */
+static inline const void *CS_GetDefAddr(CS_ChecksumType_Enum_t TableId)
+{
+    return CS_AppData.Tbl[TableId].DefAddr;
+}
+
+/**
+ * \brief Gets the result table pointer for the given table ID
+ * \param TableId Identifier of table
+ * \returns Pointer to result data
+ * \retval  NULL if no result table registered
+ */
+static inline void *CS_GetResAddr(CS_ChecksumType_Enum_t TableId)
+{
+    return CS_AppData.Tbl[TableId].ResAddr;
+}
+
+/**
+ * \brief Gets the result table pointer for OSAL code segment
+ * \returns Pointer to OSAL segment result data
+ * \retval  NULL if no OSAL segment result registered
+ */
+static inline CS_Res_EepromMemory_Table_Entry_t *CS_GetOSCodeSegResTable(void)
+{
+    return (CS_Res_EepromMemory_Table_Entry_t *)CS_GetResAddr(CS_ChecksumType_OSCORE);
+}
+
+/**
+ * \brief Gets the result table pointer for CFE core code segment
+ * \returns Pointer to CFE core segment result data
+ * \retval  NULL if no CFE core segment result registered
+ */
+static inline CS_Res_EepromMemory_Table_Entry_t *CS_GetCfeCoreCodeSegResTable(void)
+{
+    return (CS_Res_EepromMemory_Table_Entry_t *)CS_GetResAddr(CS_ChecksumType_CFECORE);
+}
+
+/**
+ * \brief Gets the definition table pointer for EEPROM checksums
+ * \returns Pointer to EEPROM checksum definition data
+ * \retval  NULL if no EEPROM checksum definition registered
+ */
+static inline CS_Def_EepromMemory_Table_Entry_t *CS_GetEepromDefTable(void)
+{
+    return (CS_Def_EepromMemory_Table_Entry_t *)CS_GetDefAddr(CS_ChecksumType_EEPROM_TABLE);
+}
+
+/**
+ * \brief Gets the result table pointer for EEPROM checksums
+ * \returns Pointer to EEPROM checksum result data
+ * \retval  NULL if no EEPROM checksum result registered
+ */
+static inline CS_Res_EepromMemory_Table_Entry_t *CS_GetEepromResTable(void)
+{
+    return (CS_Res_EepromMemory_Table_Entry_t *)CS_GetResAddr(CS_ChecksumType_EEPROM_TABLE);
+}
+
+/**
+ * \brief Gets the definition table pointer for Memory checksums
+ * \returns Pointer to Memory checksum definition data
+ * \retval  NULL if no Memory checksum definition registered
+ */
+static inline CS_Def_EepromMemory_Table_Entry_t *CS_GetMemoryDefTable(void)
+{
+    return (CS_Def_EepromMemory_Table_Entry_t *)CS_GetDefAddr(CS_ChecksumType_MEMORY_TABLE);
+}
+
+/**
+ * \brief Gets the result table pointer for Memory checksums
+ * \returns Pointer to Memory checksum result data
+ * \retval  NULL if no Memory checksum result registered
+ */
+static inline CS_Res_EepromMemory_Table_Entry_t *CS_GetMemoryResTable(void)
+{
+    return (CS_Res_EepromMemory_Table_Entry_t *)CS_GetResAddr(CS_ChecksumType_MEMORY_TABLE);
+}
+
+/**
+ * \brief Gets the definition table pointer for Table checksums
+ * \returns Pointer to Table checksum definition data
+ * \retval  NULL if no Table checksum definition registered
+ */
+static inline CS_Def_Tables_Table_Entry_t *CS_GetTablesDefTable(void)
+{
+    return (CS_Def_Tables_Table_Entry_t *)CS_GetDefAddr(CS_ChecksumType_TABLES_TABLE);
+}
+
+/**
+ * \brief Gets the result table pointer for Table checksums
+ * \returns Pointer to Table checksum result data
+ * \retval  NULL if no Table checksum result registered
+ */
+static inline CS_Res_Tables_Table_Entry_t *CS_GetTablesResTable(void)
+{
+    return (CS_Res_Tables_Table_Entry_t *)CS_GetResAddr(CS_ChecksumType_TABLES_TABLE);
+}
+
+/**
+ * \brief Gets the definition table pointer for App checksums
+ * \returns Pointer to App checksum definition data
+ * \retval  NULL if no App checksum definition registered
+ */
+static inline CS_Def_App_Table_Entry_t *CS_GetAppDefTable(void)
+{
+    return (CS_Def_App_Table_Entry_t *)CS_GetDefAddr(CS_ChecksumType_APP_TABLE);
+}
+
+/**
+ * \brief Gets the result table pointer for App checksums
+ * \returns Pointer to App checksum result data
+ * \retval  NULL if no App checksum result registered
+ */
+static inline CS_Res_App_Table_Entry_t *CS_GetAppResTable(void)
+{
+    return (CS_Res_App_Table_Entry_t *)CS_GetResAddr(CS_ChecksumType_APP_TABLE);
+}
 
 /**
  * \brief CFS Checksum (CS) application entry point
@@ -227,52 +380,6 @@ void CS_UpdateCDS(void);
  * \retval #CFE_SUCCESS \copybrief CFE_SUCCESS
  */
 CFE_Status_t CS_AppInit(void);
-
-/**
- * \brief Process a command pipe message
- *
- *  \par Description
- *       Processes a single software bus command pipe message. Checks
- *       the message and command IDs and calls the appropriate routine
- *       to handle the command.
- *
- *  \par Assumptions, External Events, and Notes:
- *       None
- *
- *  \param [in]   BufPtr   A #CFE_SB_Buffer_t* pointer that
- *                         references the software bus message.  The
- *                         calling function verifies that BufPtr is
- *                         non-null.
- *
- * \return Execution status, see \ref CFEReturnCodes
- * \retval #CFE_SUCCESS \copybrief CFE_SUCCESS
- */
-CFE_Status_t CS_AppPipe(const CFE_SB_Buffer_t *BufPtr);
-
-/**
- * \brief Process housekeeping request
- *
- *  \par Description
- *       Processes an on-board housekeeping request message.
- *
- *  \par Assumptions, External Events, and Notes:
- *       This command does not affect the command execution counter
- *
- *  \param[in] CmdPtr Command pointer, verified non-null in CS_AppMain
- */
-void CS_HousekeepingCmd(const CS_NoArgsCmd_t *CmdPtr);
-
-/**
- * \brief Command packet processor
- *
- * \par Description
- *      Processes all CS commands
- *
- * \param [in] BufPtr A CFE_SB_Buffer_t* pointer that
- *                    references the software bus pointer. The
- *                    BufPtr is verified non-null in CS_AppMain.
- */
-void CS_ProcessCmd(const CFE_SB_Buffer_t *BufPtr);
 
 /**
  * \brief Restore tables states from CDS if enabled

@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -22,10 +21,10 @@
  *   Specification for the CFS Checksum command and telemetry
  *   messages.
  */
-#ifndef CS_MSGDEFS_H
-#define CS_MSGDEFS_H
+#ifndef CS_FCNCODES_H
+#define CS_FCNCODES_H
 
-#include <cfe.h>
+#include "cs_fcncode_values.h"
 
 /**
  * \defgroup cfscscmdcodes CFS Checksum Command Codes
@@ -39,7 +38,7 @@
  *       Implements the Noop command that insures the CS task is alive
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_NoopCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -61,7 +60,7 @@
  *
  *  \sa #CS_RESET_CC
  */
-#define CS_NOOP_CC 0
+#define CS_NOOP_CC CS_CCVAL(NOOP)
 
 /**
  * \brief Reset Counters
@@ -70,7 +69,7 @@
  *       Resets the CS housekeeping counters
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_ResetCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -93,7 +92,7 @@
  *
  *  \sa #CS_NOOP_CC
  */
-#define CS_RESET_CC 1
+#define CS_RESET_CC CS_CCVAL(RESET)
 
 /**
  * \brief Start One shot calculation
@@ -144,7 +143,7 @@
  *      #CS_RECOMPUTE_BASELINE_TABLE_CC,
  *      #CS_RECOMPUTE_BASELINE_APP_CC
  */
-#define CS_ONE_SHOT_CC 2
+#define CS_ONE_SHOT_CC CS_CCVAL(ONE_SHOT)
 
 /**
  * \brief Cancel one shot
@@ -153,7 +152,7 @@
  *       Cancels a one shot calculation that is already in progress.
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_CancelOneShotCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -179,7 +178,7 @@
  *
  *  \sa #CS_ONE_SHOT_CC
  */
-#define CS_CANCEL_ONE_SHOT_CC 3
+#define CS_CANCEL_ONE_SHOT_CC CS_CCVAL(CANCEL_ONE_SHOT)
 
 /**
  * \brief Enable Global Checksumming
@@ -188,7 +187,7 @@
  *       Allows CS to continue background checking
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_EnableAllCSCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -196,7 +195,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_ENABLE_ALL_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.ChecksumState set to #CS_STATE_ENABLED
+ *       - #CS_HkPacket_Payload_t.ChecksumState set to #CS_ChecksumState_ENABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -211,7 +210,7 @@
  *
  *  \sa #CS_DISABLE_ALL_CS_CC
  */
-#define CS_ENABLE_ALL_CS_CC 4
+#define CS_ENABLE_ALL_CS_CC CS_CCVAL(ENABLE_ALL_CS)
 
 /**
  * \brief Disable Global Checksumming
@@ -220,7 +219,7 @@
  *       Disables all background checking
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_DisableAllCSCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -228,7 +227,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_DISABLE_ALL_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.ChecksumState set to #CS_STATE_DISABLED
+ *       - #CS_HkPacket_Payload_t.ChecksumState set to #CS_ChecksumState_DISABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -243,7 +242,7 @@
  *
  *  \sa #CS_ENABLE_ALL_CS_CC
  */
-#define CS_DISABLE_ALL_CS_CC 5
+#define CS_DISABLE_ALL_CS_CC CS_CCVAL(DISABLE_ALL_CS)
 
 /**
  * \brief Enable checksumming of cFE core
@@ -252,7 +251,7 @@
  *       Enables background checking on the cFE core code segment
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_EnableCfeCoreCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -260,7 +259,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_ENABLE_CFECORE_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.CfeCoreCSState set to #CS_STATE_ENABLED
+ *       - #CS_HkPacket_Payload_t.CfeCoreCSState set to #CS_ChecksumState_ENABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -275,7 +274,7 @@
  *
  *  \sa #CS_DISABLE_CFE_CORE_CC
  */
-#define CS_ENABLE_CFE_CORE_CC 6
+#define CS_ENABLE_CFE_CORE_CC CS_CCVAL(ENABLE_CFE_CORE)
 
 /**
  * \brief Disable checksumming of cFE core
@@ -284,7 +283,7 @@
  *       Disables background checking on the cFE core code segment
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_DisableCfeCoreCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -292,7 +291,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_DISABLE_CFECORE_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.CfeCoreCSState set to #CS_STATE_DISABLED
+ *       - #CS_HkPacket_Payload_t.CfeCoreCSState set to #CS_ChecksumState_DISABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -307,7 +306,7 @@
  *
  *  \sa #CS_ENABLE_CFE_CORE_CC
  */
-#define CS_DISABLE_CFE_CORE_CC 7
+#define CS_DISABLE_CFE_CORE_CC CS_CCVAL(DISABLE_CFE_CORE)
 
 /**
  * \brief Report Baseline checksum of cFE core
@@ -317,7 +316,7 @@
  *       that has already been calculated.
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_ReportBaselineCfeCoreCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -340,7 +339,7 @@
  *       None
  *
  */
-#define CS_REPORT_BASELINE_CFE_CORE_CC 8
+#define CS_REPORT_BASELINE_CFE_CORE_CC CS_CCVAL(REPORT_BASELINE_CFE_CORE)
 
 /**
  * \brief Recompute Baseline checksum of cFE core
@@ -350,7 +349,7 @@
  *       and use the new value as the baseline.
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_RecomputeBaselineCfeCoreCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -383,7 +382,7 @@
  *      #CS_RECOMPUTE_BASELINE_TABLE_CC,
  *      #CS_RECOMPUTE_BASELINE_APP_CC
  */
-#define CS_RECOMPUTE_BASELINE_CFE_CORE_CC 9
+#define CS_RECOMPUTE_BASELINE_CFE_CORE_CC CS_CCVAL(RECOMPUTE_BASELINE_CFE_CORE)
 
 /**
  * \brief Enable checksumming of OS code segment
@@ -392,7 +391,7 @@
  *       Enables background checking on the OS code segment
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_EnableOSCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -408,14 +407,14 @@
  *  \par Evidence of failure may be found in the following telemetry:
  *       - #CS_HkPacket_Payload_t.CmdErrCounter will increment
  *       - Error specific event message #CS_CMD_LEN_ERR_EID
- *       - #CS_HkPacket_Payload_t.OSCSState set to #CS_STATE_ENABLED
+ *       - #CS_HkPacket_Payload_t.OSCSState set to #CS_ChecksumState_ENABLED
  *
  *  \par Criticality
  *       None
  *
  *  \sa #CS_DISABLE_OS_CC
  */
-#define CS_ENABLE_OS_CC 10
+#define CS_ENABLE_OS_CC CS_CCVAL(ENABLE_OS)
 
 /**
  * \brief Disable checksumming of OS code segment
@@ -424,7 +423,7 @@
  *       Disables background checking on the OS code segment code segment
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_DisableOSCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -432,7 +431,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_DISABLE_OS_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.OSCSState set to #CS_STATE_DISABLED
+ *       - #CS_HkPacket_Payload_t.OSCSState set to #CS_ChecksumState_DISABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -447,7 +446,7 @@
  *
  *  \sa #CS_ENABLE_OS_CC
  */
-#define CS_DISABLE_OS_CC 11
+#define CS_DISABLE_OS_CC CS_CCVAL(DISABLE_OS)
 
 /**
  * \brief Report Baseline checksum of OS code segment
@@ -457,7 +456,7 @@
  *       that has already been calculated.
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_ReportBaselineOSCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -479,7 +478,7 @@
  *  \par Criticality
  *       None
  */
-#define CS_REPORT_BASELINE_OS_CC 12
+#define CS_REPORT_BASELINE_OS_CC CS_CCVAL(REPORT_BASELINE_OS)
 
 /**
  * \brief Recompute Baseline checksum of OS code segment
@@ -489,7 +488,7 @@
  *       and use the new value as the baseline.
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_RecomputeBaselineOSCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -521,7 +520,7 @@
  *      #CS_RECOMPUTE_BASELINE_TABLE_CC,
  *      #CS_RECOMPUTE_BASELINE_APP_CC
  */
-#define CS_RECOMPUTE_BASELINE_OS_CC 13
+#define CS_RECOMPUTE_BASELINE_OS_CC CS_CCVAL(RECOMPUTE_BASELINE_OS)
 
 /**
  * \brief Enable checksumming for EEPROM table
@@ -530,7 +529,7 @@
  *       Allow the EEPROM table to checksummed in the background
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_EnableEepromCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -538,7 +537,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_ENABLE_EEPROM_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.EepromCSState set to #CS_STATE_ENABLED
+ *       - #CS_HkPacket_Payload_t.EepromCSState set to #CS_ChecksumState_ENABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -553,7 +552,7 @@
  *
  *  \sa #CS_DISABLE_EEPROM_CC
  */
-#define CS_ENABLE_EEPROM_CC 14
+#define CS_ENABLE_EEPROM_CC CS_CCVAL(ENABLE_EEPROM)
 
 /**
  * \brief Disable checksumming for EEPROM table
@@ -562,7 +561,7 @@
  *       Disable the EEPROM table background checksumming
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_DisableEepromCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -570,7 +569,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_DISABLE_EEPROM_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.EepromCSState set to #CS_STATE_DISABLED
+ *       - #CS_HkPacket_Payload_t.EepromCSState set to #CS_ChecksumState_DISABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -585,7 +584,7 @@
  *
  *  \sa #CS_ENABLE_EEPROM_CC
  */
-#define CS_DISABLE_EEPROM_CC 15
+#define CS_DISABLE_EEPROM_CC CS_CCVAL(DISABLE_EEPROM)
 
 /**
  * \brief Report Baseline checksum of EEPROM Entry
@@ -595,7 +594,7 @@
  *       table entry that has already been calculated.
  *
  *  \par Command Structure
- *       #CS_EntryCmd_t
+ *       #CS_ReportBaselineEntryIDEepromCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -620,7 +619,7 @@
  *       None
  *
  */
-#define CS_REPORT_BASELINE_EEPROM_CC 16
+#define CS_REPORT_BASELINE_ENTRY_ID_EEPROM_CC CS_CCVAL(REPORT_BASELINE_ENTRY_ID_EEPROM)
 
 /**
  * \brief Recompute Baseline checksum of EEPROM Entry
@@ -631,7 +630,7 @@
  *       This command spawns a child task to do the recompute.
  *
  *  \par Command Structure
- *       #CS_EntryCmd_t
+ *       #CS_RecomputeBaselineEepromCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -668,7 +667,7 @@
  *      #CS_RECOMPUTE_BASELINE_TABLE_CC,
  *      #CS_RECOMPUTE_BASELINE_APP_CC
  */
-#define CS_RECOMPUTE_BASELINE_EEPROM_CC 17
+#define CS_RECOMPUTE_BASELINE_EEPROM_CC CS_CCVAL(RECOMPUTE_BASELINE_EEPROM)
 
 /**
  * \brief Enable checksumming for an EEPROM entry
@@ -677,7 +676,7 @@
  *       Allow the EEPROM entry to checksummed in the background
  *
  *  \par Command Structure
- *       #CS_EntryCmd_t
+ *       #CS_EnableEntryIDEepromCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -699,9 +698,9 @@
  *  \par Criticality
  *       None
  *
- *  \sa #CS_DISABLE_ENTRY_EEPROM_CC
+ *  \sa #CS_DISABLE_ENTRY_ID_EEPROM_CC
  */
-#define CS_ENABLE_ENTRY_EEPROM_CC 18
+#define CS_ENABLE_ENTRY_ID_EEPROM_CC CS_CCVAL(ENABLE_ENTRY_ID_EEPROM)
 
 /**
  * \brief Disable checksumming for an EEPROM entry
@@ -710,7 +709,7 @@
  *      Disable the EEPROM entry background checksumming
  *
  *  \par Command Structure
- *       #CS_EntryCmd_t
+ *       #CS_DisableEntryIDEepromCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -732,9 +731,9 @@
  *  \par Criticality
  *       None
  *
- *  \sa #CS_ENABLE_ENTRY_EEPROM_CC
+ *  \sa #CS_ENABLE_ENTRY_ID_EEPROM_CC
  */
-#define CS_DISABLE_ENTRY_EEPROM_CC 19
+#define CS_DISABLE_ENTRY_ID_EEPROM_CC CS_CCVAL(DISABLE_ENTRY_ID_EEPROM)
 
 /**
  * \brief Get the Entry ID for a given EEPROM address
@@ -744,7 +743,7 @@
  *     subsequent commands.
  *
  *  \par Command Structure
- *       #CS_GetEntryIDCmd_t
+ *       #CS_GetEntryIDEepromCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -766,7 +765,7 @@
  *  \par Criticality
  *       None
  */
-#define CS_GET_ENTRY_ID_EEPROM_CC 20
+#define CS_GET_ENTRY_ID_EEPROM_CC CS_CCVAL(GET_ENTRY_ID_EEPROM)
 
 /**
  * \brief Enable checksumming for Memory table
@@ -775,7 +774,7 @@
  *       Allow the Memory table to checksummed in the background
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_EnableMemoryCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -783,7 +782,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_ENABLE_MEMORY_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.MemoryCSState set to #CS_STATE_ENABLED
+ *       - #CS_HkPacket_Payload_t.MemoryCSState set to #CS_ChecksumState_ENABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -798,7 +797,7 @@
  *
  *  \sa #CS_DISABLE_MEMORY_CC
  */
-#define CS_ENABLE_MEMORY_CC 21
+#define CS_ENABLE_MEMORY_CC CS_CCVAL(ENABLE_MEMORY)
 
 /**
  * \brief Disable checksumming for Memory table
@@ -807,7 +806,7 @@
  *       Disable the Memory table background checksumming
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_DisableMemoryCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -815,7 +814,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_DISABLE_MEMORY_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.MemoryCSState set to #CS_STATE_DISABLED
+ *       - #CS_HkPacket_Payload_t.MemoryCSState set to #CS_ChecksumState_DISABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -830,7 +829,7 @@
  *
  *  \sa #CS_ENABLE_MEMORY_CC
  */
-#define CS_DISABLE_MEMORY_CC 22
+#define CS_DISABLE_MEMORY_CC CS_CCVAL(DISABLE_MEMORY)
 
 /**
  * \brief Report Baseline checksum of Memory Entry
@@ -840,7 +839,7 @@
  *       table entry that has already been calculated.
  *
  *  \par Command Structure
- *       #CS_EntryCmd_t
+ *       #CS_ReportBaselineEntryIDMemoryCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -864,7 +863,7 @@
  *  \par Criticality
  *       None
  */
-#define CS_REPORT_BASELINE_MEMORY_CC 23
+#define CS_REPORT_BASELINE_ENTRY_ID_MEMORY_CC CS_CCVAL(REPORT_BASELINE_ENTRY_ID_MEMORY)
 
 /**
  * \brief Recompute Baseline checksum of Memory Entry
@@ -875,7 +874,7 @@
  *       This command spawns a child task to do the recompute.
  *
  *  \par Command Structure
- *       #CS_EntryCmd_t
+ *       #CS_RecomputeBaselineMemoryCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -912,7 +911,7 @@
  *      #CS_RECOMPUTE_BASELINE_TABLE_CC,
  *      #CS_RECOMPUTE_BASELINE_APP_CC
  */
-#define CS_RECOMPUTE_BASELINE_MEMORY_CC 24
+#define CS_RECOMPUTE_BASELINE_MEMORY_CC CS_CCVAL(RECOMPUTE_BASELINE_MEMORY)
 
 /**
  * \brief Enable checksumming for a Memory entry
@@ -921,7 +920,7 @@
  *       Allow the Memory entry to checksummed in the background
  *
  *  \par Command Structure
- *       #CS_EntryCmd_t
+ *       #CS_EnableEntryIDMemoryCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -943,9 +942,9 @@
  *  \par Criticality
  *       None
  *
- *  \sa #CS_DISABLE_ENTRY_MEMORY_CC
+ *  \sa #CS_DISABLE_ENTRY_ID_MEMORY_CC
  */
-#define CS_ENABLE_ENTRY_MEMORY_CC 25
+#define CS_ENABLE_ENTRY_ID_MEMORY_CC CS_CCVAL(ENABLE_ENTRY_ID_MEMORY)
 
 /**
  * \brief Disable checksumming for a Memory entry
@@ -954,7 +953,7 @@
  *      Disable the Memory entry background checksumming
  *
  *  \par Command Structure
- *       #CS_EntryCmd_t
+ *       #CS_DisableEntryIDMemoryCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -976,9 +975,9 @@
  *  \par Criticality
  *       None
  *
- *  \sa #CS_ENABLE_ENTRY_MEMORY_CC
+ *  \sa #CS_ENABLE_ENTRY_ID_MEMORY_CC
  */
-#define CS_DISABLE_ENTRY_MEMORY_CC 26
+#define CS_DISABLE_ENTRY_ID_MEMORY_CC CS_CCVAL(DISABLE_ENTRY_ID_MEMORY)
 
 /**
  * \brief Get the Entry ID for a given Memory address
@@ -988,7 +987,7 @@
  *     subsequent commands.
  *
  *  \par Command Structure
- *       #CS_GetEntryIDCmd_t
+ *       #CS_GetEntryIDMemoryCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1011,7 +1010,7 @@
  *       None
  *
  */
-#define CS_GET_ENTRY_ID_MEMORY_CC 27
+#define CS_GET_ENTRY_ID_MEMORY_CC CS_CCVAL(GET_ENTRY_ID_MEMORY)
 
 /**
  * \brief Enable checksumming for Tables table
@@ -1020,7 +1019,7 @@
  *       Allow the Tables table to checksummed in the background
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_EnableTablesCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1028,7 +1027,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_ENABLE_TABLES_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.TablesCSState set to #CS_STATE_ENABLED
+ *       - #CS_HkPacket_Payload_t.TablesCSState set to #CS_ChecksumState_ENABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -1043,7 +1042,7 @@
  *
  *  \sa #CS_DISABLE_TABLES_CC
  */
-#define CS_ENABLE_TABLES_CC 28
+#define CS_ENABLE_TABLES_CC CS_CCVAL(ENABLE_TABLES)
 
 /**
  * \brief Disable checksumming for Tables table
@@ -1052,7 +1051,7 @@
  *       Disable the Tables table background checksumming
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_DisableTablesCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1060,7 +1059,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_DISABLE_TABLES_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.TablesCSState set to #CS_STATE_DISABLED
+ *       - #CS_HkPacket_Payload_t.TablesCSState set to #CS_ChecksumState_DISABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -1075,7 +1074,7 @@
  *
  *  \sa #CS_ENABLE_TABLES_CC
  */
-#define CS_DISABLE_TABLES_CC 29
+#define CS_DISABLE_TABLES_CC CS_CCVAL(DISABLE_TABLES)
 
 /**
  * \brief Report Baseline checksum of a table
@@ -1085,15 +1084,15 @@
  *       table that has already been calculated.
  *
  *  \par Command Structure
- *       #CS_TableNameCmd_t
+ *       #CS_ReportBaselineTableCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
  *       the following telemetry:
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
- *       - The #CS_BASELINE_TABLES_INF_EID informational event message will be
+ *       - The #CS_BASELINE_TABLE_INF_EID informational event message will be
  *         generated when the command is received, or
- *       - The #CS_NO_BASELINE_TABLES_INF_EID informational event message will be
+ *       - The #CS_NO_BASELINE_TABLE_INF_EID informational event message will be
  *         generated when the command is received
  *
  *  \par Error Conditions
@@ -1109,7 +1108,7 @@
  *  \par Criticality
  *       None
  */
-#define CS_REPORT_BASELINE_TABLE_CC 30
+#define CS_REPORT_BASELINE_TABLE_CC CS_CCVAL(REPORT_BASELINE_TABLE)
 
 /**
  * \brief Recompute Baseline checksum of a table
@@ -1120,7 +1119,7 @@
  *       This command spawns a child task to do the recompute.
  *
  *  \par Command Structure
- *       #CS_TableNameCmd_t
+ *       #CS_RecomputeBaselineTableCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1163,7 +1162,7 @@
  *      #CS_RECOMPUTE_BASELINE_MEMORY_CC,
  *      #CS_RECOMPUTE_BASELINE_APP_CC
  */
-#define CS_RECOMPUTE_BASELINE_TABLE_CC 31
+#define CS_RECOMPUTE_BASELINE_TABLE_CC CS_CCVAL(RECOMPUTE_BASELINE_TABLE)
 
 /**
  * \brief Enable checksumming for a table
@@ -1172,7 +1171,7 @@
  *       Allow the table to checksummed in the background
  *
  *  \par Command Structure
- *       #CS_TableNameCmd_t
+ *       #CS_EnableNameTableCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1196,7 +1195,7 @@
  *
  *  \sa #CS_DISABLE_NAME_TABLE_CC
  */
-#define CS_ENABLE_NAME_TABLE_CC 32
+#define CS_ENABLE_NAME_TABLE_CC CS_CCVAL(ENABLE_NAME_TABLE)
 
 /**
  * \brief Disable checksumming for a table
@@ -1205,7 +1204,7 @@
  *       Disable background checking of the table
  *
  *  \par Command Structure
- *       #CS_TableNameCmd_t
+ *       #CS_DisableNameTableCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1227,9 +1226,9 @@
  *  \par Criticality
  *       None
  *
- *  \sa #CS_DISABLE_NAME_TABLE_CC
+ *  \sa #CS_ENABLE_NAME_TABLE_CC
  */
-#define CS_DISABLE_NAME_TABLE_CC 33
+#define CS_DISABLE_NAME_TABLE_CC CS_CCVAL(DISABLE_NAME_TABLE)
 
 /**
  * \brief Enable checksumming for App table
@@ -1238,7 +1237,7 @@
  *       Allow the App table to checksummed in the background
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_EnableAppsCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1246,7 +1245,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_ENABLE_APP_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.AppCSState set to #CS_STATE_ENABLED
+ *       - #CS_HkPacket_Payload_t.AppCSState set to #CS_ChecksumState_ENABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -1261,7 +1260,7 @@
  *
  *  \sa #CS_DISABLE_APPS_CC
  */
-#define CS_ENABLE_APPS_CC 34
+#define CS_ENABLE_APPS_CC CS_CCVAL(ENABLE_APPS)
 
 /**
  * \brief Disable checksumming for App table
@@ -1270,7 +1269,7 @@
  *       Disable the App table background checksumming
  *
  *  \par Command Structure
- *       #CS_NoArgsCmd_t
+ *       #CS_DisableAppsCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1278,7 +1277,7 @@
  *       - #CS_HkPacket_Payload_t.CmdCounter will increment
  *       - The #CS_DISABLE_APP_INF_EID informational event message will be
  *         generated when the command is received
- *       - #CS_HkPacket_Payload_t.AppCSState set to #CS_STATE_DISABLED
+ *       - #CS_HkPacket_Payload_t.AppCSState set to #CS_ChecksumState_DISABLED
  *
  *  \par Error Conditions
  *       This command may fail for the following reason(s):
@@ -1293,7 +1292,7 @@
  *
  *  \sa #CS_ENABLE_APPS_CC
  */
-#define CS_DISABLE_APPS_CC 35
+#define CS_DISABLE_APPS_CC CS_CCVAL(DISABLE_APPS)
 
 /**
  * \brief Report Baseline checksum of an app
@@ -1303,7 +1302,7 @@
  *       app that has already been calculated.
  *
  *  \par Command Structure
- *       #CS_AppNameCmd_t
+ *       #CS_ReportBaselineAppCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1327,7 +1326,7 @@
  *  \par Criticality
  *       None
  */
-#define CS_REPORT_BASELINE_APP_CC 36
+#define CS_REPORT_BASELINE_APP_CC CS_CCVAL(REPORT_BASELINE_APP)
 
 /**
  * \brief Recompute Baseline checksum of an app
@@ -1338,7 +1337,7 @@
  *       This command spawns a child task to do the recompute.
  *
  *  \par Command Structure
- *       #CS_AppNameCmd_t
+ *       #CS_RecomputeBaselineAppCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1375,7 +1374,7 @@
  *      #CS_RECOMPUTE_BASELINE_MEMORY_CC,
  *      #CS_RECOMPUTE_BASELINE_TABLE_CC
  */
-#define CS_RECOMPUTE_BASELINE_APP_CC 37
+#define CS_RECOMPUTE_BASELINE_APP_CC CS_CCVAL(RECOMPUTE_BASELINE_APP)
 
 /**
  * \brief Enable checksumming for an app
@@ -1384,7 +1383,7 @@
  *       Allow the app to checksummed in the background
  *
  *  \par Command Structure
- *       #CS_AppNameCmd_t
+ *       #CS_EnableNameAppCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1408,7 +1407,7 @@
  *
  *  \sa #CS_DISABLE_NAME_APP_CC
  */
-#define CS_ENABLE_NAME_APP_CC 38
+#define CS_ENABLE_NAME_APP_CC CS_CCVAL(ENABLE_NAME_APP)
 
 /**
  * \brief Disable checksumming for an app
@@ -1417,7 +1416,7 @@
  *       Disable background checking of the app
  *
  *  \par Command Structure
- *       #CS_AppNameCmd_t
+ *       #CS_DisableNameAppCmd_t
  *
  *  \par Command Verification
  *       Successful execution of this command may be verified with
@@ -1441,31 +1440,8 @@
  *
  *  \sa #CS_DISABLE_NAME_APP_CC
  */
-#define CS_DISABLE_NAME_APP_CC 39
+#define CS_DISABLE_NAME_APP_CC CS_CCVAL(DISABLE_NAME_APP)
 
-/**\}*/
-
-/**
- * \name CS Checksum Type Number Definitions
- * \{
- */
-#define CS_CFECORE      0 /**< \brief cFE Core checksum */
-#define CS_OSCORE       1 /**< \brief OS Core checksum */
-#define CS_EEPROM_TABLE 2 /**< \brief EEPROM checksum */
-#define CS_MEMORY_TABLE 3 /**< \brief Memory checksum */
-#define CS_TABLES_TABLE 4 /**< \brief Tables checksum */
-#define CS_APP_TABLE    5 /**< \brief App checksum */
-#define CS_NUM_TABLES   6 /**< \brief Number of checksum types*/
-/**\}*/
-
-/**
- * \name CS Checkum States
- * \{
- */
-#define CS_STATE_EMPTY     0x00 /**< \brief Entry unused */
-#define CS_STATE_ENABLED   0x01 /**< \brief Entry or table enabled */
-#define CS_STATE_DISABLED  0x02 /**< \brief Entry or table disabled */
-#define CS_STATE_UNDEFINED 0x03 /**< \brief Entry not found state undefined */
 /**\}*/
 
 #ifndef CS_OMIT_DEPRECATED

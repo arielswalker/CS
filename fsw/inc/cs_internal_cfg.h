@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -22,10 +21,10 @@
  *   Specification for the CFS Checksum constants that can
  *   be configured from one platform to another
  */
-#ifndef CS_PLATFORM_CFG_H
-#define CS_PLATFORM_CFG_H
+#ifndef CS_INTERNAL_CFG_H
+#define CS_INTERNAL_CFG_H
 
-#include <cfe_platform_cfg.h> /* for CFE_ES_DEFAULT_STACK_SIZE */
+#include "cs_internal_cfg_values.h"
 
 /**
  * \defgroup cfscsplatformcfg CFS Checksum Platform Configuration
@@ -43,7 +42,8 @@
  *       The string length (including string terminator) cannot exceed
  *       #OS_MAX_PATH_LEN.  (limit is not verified)
  */
-#define CS_DEF_EEPROM_TABLE_FILENAME "/cf/cs_eepromtbl.tbl"
+#define CS_DEF_EEPROM_TABLE_FILENAME                  CS_INTERNAL_CFGVAL(DEF_EEPROM_TABLE_FILENAME)
+#define DEFAULT_CS_INTERNAL_DEF_EEPROM_TABLE_FILENAME "/cf/cs_eepromtbl.tbl"
 
 /**
  *  \brief Memory Address File Table -- default table filename
@@ -56,7 +56,8 @@
  *       The string length (including string terminator) cannot exceed
  *       #OS_MAX_PATH_LEN.  (limit is not verified)
  */
-#define CS_DEF_MEMORY_TABLE_FILENAME "/cf/cs_memorytbl.tbl"
+#define CS_DEF_MEMORY_TABLE_FILENAME                  CS_INTERNAL_CFGVAL(DEF_MEMORY_TABLE_FILENAME)
+#define DEFAULT_CS_INTERNAL_DEF_MEMORY_TABLE_FILENAME "/cf/cs_memorytbl.tbl"
 
 /**
  *  \brief Tables File Table -- default table filename
@@ -69,7 +70,8 @@
  *       The string length (including string terminator) cannot exceed
  *       #OS_MAX_PATH_LEN.  (limit is not verified)
  */
-#define CS_DEF_TABLES_TABLE_FILENAME "/cf/cs_tablestbl.tbl"
+#define CS_DEF_TABLES_TABLE_FILENAME                  CS_INTERNAL_CFGVAL(DEF_TABLES_TABLE_FILENAME)
+#define DEFAULT_CS_INTERNAL_DEF_TABLES_TABLE_FILENAME "/cf/cs_tablestbl.tbl"
 
 /**
  *  \brief Application File Table -- default table filename
@@ -82,7 +84,8 @@
  *       The string length (including string terminator) cannot exceed
  *       #OS_MAX_PATH_LEN.  (limit is not verified)
  */
-#define CS_DEF_APP_TABLE_FILENAME "/cf/cs_apptbl.tbl"
+#define CS_DEF_APP_TABLE_FILENAME                  CS_INTERNAL_CFGVAL(DEF_APP_TABLE_FILENAME)
+#define DEFAULT_CS_INTERNAL_DEF_APP_TABLE_FILENAME "/cf/cs_apptbl.tbl"
 
 /**
  *  \brief Application Pipe Depth
@@ -97,57 +100,8 @@
  *  \par Limits:
  *       The value must be greater than zero
  */
-#define CS_PIPE_DEPTH (3 * CFE_PLATFORM_SB_DEFAULT_MSG_LIMIT)
-
-/**
- * \brief  Maximum number of entries in the EEPROM table to checksum
- *
- *  \par  Description:
- *        Maximum number of entries that can be in the table of
- *        EEPROM areas to checksum.
- *
- *  \par Limits:
- *     This parameter is limited by the  uint16 datatype that defines it.
- *     This parameter is limited to 65535.
- */
-#define CS_MAX_NUM_EEPROM_TABLE_ENTRIES 16
-
-/**
- * \brief  Maximum number of entries in the Memory table to checksum
- *
- *  \par  Description:
- *        Maximum number of entries that can be in the table of
- *        Memory areas to checksum.
- *
- *  \par Limits:
- *     This parameter is limited by the  uint16 datatype that defines it.
- *     This parameter is limited to 65535.
- */
-#define CS_MAX_NUM_MEMORY_TABLE_ENTRIES 16
-
-/**
- * \brief Maximum number of tables to checksum
- *
- *  \par  Description:
- *        Maximum number of entries in the table of tables to checksum
- *
- *  \par Limits:
- *       This parameter is limited by the maximum number of tables allowed
- *       in the system. This parameter is limited to #CFE_PLATFORM_TBL_MAX_NUM_TABLES
- */
-#define CS_MAX_NUM_TABLES_TABLE_ENTRIES 24
-
-/**
- * \brief Maximum number of applications to checksum
- *
- *  \par  Description:
- *        Maximum number of entries in the table of applications to checksum
- *
- *  \par Limits:
- *       This parameter is limited by the maximum number of applications allowed
- *       in the system. This parameter is limited to #CFE_PLATFORM_ES_MAX_APPLICATIONS
- */
-#define CS_MAX_NUM_APP_TABLE_ENTRIES 24
+#define CS_PIPE_DEPTH                  CS_INTERNAL_CFGVAL(PIPE_DEPTH)
+#define DEFAULT_CS_INTERNAL_PIPE_DEPTH (3 * CFE_PLATFORM_SB_DEFAULT_MSG_LIMIT)
 
 /**
  * \brief Default number of bytes to checksum per cycle
@@ -161,7 +115,8 @@
  *       range is 0 to 0xFFFFFFFF.  Note that "0" is a valid value, and will
  *       result in a checksum of 0.
  */
-#define CS_DEFAULT_BYTES_PER_CYCLE (1024 * 16)
+#define CS_DEFAULT_BYTES_PER_CYCLE                  CS_INTERNAL_CFGVAL(DEFAULT_BYTES_PER_CYCLE)
+#define DEFAULT_CS_INTERNAL_DEFAULT_BYTES_PER_CYCLE (1024 * 16)
 
 /**
  * \brief CS Child Task Priority
@@ -173,7 +128,8 @@
  *  \par Limits:
  *       Valid range for a child task is 1 to 255
  */
-#define CS_CHILD_TASK_PRIORITY 200
+#define CS_CHILD_TASK_PRIORITY                  CS_INTERNAL_CFGVAL(CHILD_TASK_PRIORITY)
+#define DEFAULT_CS_INTERNAL_CHILD_TASK_PRIORITY 200
 
 /**
  * \brief Delay between checksumming cycles for child task
@@ -189,7 +145,8 @@
  *       CS does not place limits on this parameter. It is intended to
  *       be configurable to prevent the child task from hogging the CPU
  */
-#define CS_CHILD_TASK_DELAY 1000
+#define CS_CHILD_TASK_DELAY                  CS_INTERNAL_CFGVAL(CHILD_TASK_DELAY)
+#define DEFAULT_CS_INTERNAL_CHILD_TASK_DELAY 1000
 
 /**
  * \brief Timeout for waiting for other apps to start
@@ -206,7 +163,8 @@
  *       CS does not place limits on this parameter. It is intended to
  *       be configurable to allow enough time for all apps to start.
  */
-#define CS_STARTUP_TIMEOUT 60000
+#define CS_STARTUP_TIMEOUT                  CS_INTERNAL_CFGVAL(STARTUP_TIMEOUT)
+#define DEFAULT_CS_INTERNAL_STARTUP_TIMEOUT 60000
 
 /**
  * \brief Desired state of the checksumming of OS code segment at power on
@@ -216,9 +174,10 @@
  *       OS code segment should be in at power on
  *
  *  \par Limits:
- *       This can either be CS_STATE_ENABLED or CS_STATE_DISABLED
+ *       This can either be CS_ChecksumState_ENABLED or CS_ChecksumState_DISABLED
  */
-#define CS_OSCS_CHECKSUM_STATE CS_STATE_ENABLED
+#define CS_OSCS_CHECKSUM_STATE                  CS_INTERNAL_CFGVAL(OSCS_CHECKSUM_STATE)
+#define DEFAULT_CS_INTERNAL_OSCS_CHECKSUM_STATE CS_ChecksumState_ENABLED
 
 /**
  * \brief Desired state of the checksumming of CFE core checksum at power on
@@ -228,9 +187,10 @@
  *       CFE core should be in at power on
  *
  *  \par Limits:
- *       This can either be CS_STATE_ENABLED or CS_STATE_DISABLED
+ *       This can either be CS_ChecksumState_ENABLED or CS_ChecksumState_DISABLED
  */
-#define CS_CFECORE_CHECKSUM_STATE CS_STATE_ENABLED
+#define CS_CFECORE_CHECKSUM_STATE                  CS_INTERNAL_CFGVAL(CFECORE_CHECKSUM_STATE)
+#define DEFAULT_CS_INTERNAL_CFECORE_CHECKSUM_STATE CS_ChecksumState_ENABLED
 
 /**
  * \brief Desired state of the EEPROM table at power on
@@ -240,9 +200,10 @@
  *       be in at power on
  *
  *  \par Limits:
- *       This can either be CS_STATE_ENABLED or CS_STATE_DISABLED
+ *       This can either be CS_ChecksumState_ENABLED or CS_ChecksumState_DISABLED
  */
-#define CS_EEPROM_TBL_POWERON_STATE CS_STATE_ENABLED
+#define CS_EEPROM_TBL_POWERON_STATE                  CS_INTERNAL_CFGVAL(EEPROM_TBL_POWERON_STATE)
+#define DEFAULT_CS_INTERNAL_EEPROM_TBL_POWERON_STATE CS_ChecksumState_ENABLED
 
 /**
  * \brief Desired state of the Memory table at power on
@@ -252,9 +213,10 @@
  *       be in at power on
  *
  *  \par Limits:
- *       This can either be CS_STATE_ENABLED or CS_STATE_DISABLED
+ *       This can either be CS_ChecksumState_ENABLED or CS_ChecksumState_DISABLED
  */
-#define CS_MEMORY_TBL_POWERON_STATE CS_STATE_ENABLED
+#define CS_MEMORY_TBL_POWERON_STATE                  CS_INTERNAL_CFGVAL(MEMORY_TBL_POWERON_STATE)
+#define DEFAULT_CS_INTERNAL_MEMORY_TBL_POWERON_STATE CS_ChecksumState_ENABLED
 
 /**
  * \brief Desired state of the Applications table at power on
@@ -264,9 +226,10 @@
  *       be in at power on
  *
  *  \par Limits:
- *       This can either be CS_STATE_ENABLED or CS_STATE_DISABLED
+ *       This can either be CS_ChecksumState_ENABLED or CS_ChecksumState_DISABLED
  */
-#define CS_APPS_TBL_POWERON_STATE CS_STATE_ENABLED
+#define CS_APPS_TBL_POWERON_STATE                  CS_INTERNAL_CFGVAL(APPS_TBL_POWERON_STATE)
+#define DEFAULT_CS_INTERNAL_APPS_TBL_POWERON_STATE CS_ChecksumState_ENABLED
 
 /**
  * \brief Desired state of the Tables table at power on
@@ -276,9 +239,10 @@
  *       be in at power on
  *
  *  \par Limits:
- *       This can either be CS_STATE_ENABLED or CS_STATE_DISABLED
+ *       This can either be CS_ChecksumState_ENABLED or CS_ChecksumState_DISABLED
  */
-#define CS_TABLES_TBL_POWERON_STATE CS_STATE_ENABLED
+#define CS_TABLES_TBL_POWERON_STATE                  CS_INTERNAL_CFGVAL(TABLES_TBL_POWERON_STATE)
+#define DEFAULT_CS_INTERNAL_TABLES_TBL_POWERON_STATE CS_ChecksumState_ENABLED
 
 /**
  * \brief Whether to preserve checksum states on processor reset
@@ -290,7 +254,8 @@
  *  \par Limits:
  *       None
  */
-#define CS_PRESERVE_STATES_ON_PROCESSOR_RESET true
+#define CS_PRESERVE_STATES_ON_PROCESSOR_RESET                  CS_INTERNAL_CFGVAL(PRESERVE_STATES_ON_PROCESSOR_RESET)
+#define DEFAULT_CS_INTERNAL_PRESERVE_STATES_ON_PROCESSOR_RESET true
 
 /**
  * \brief Name of the Critical Data Store Used for CS
@@ -304,7 +269,8 @@
  *  \par Limits:
  *       Must be a unique string with regards to CDS
  */
-#define CS_CDS_NAME "CS_CDS"
+#define CS_CDS_NAME                  CS_INTERNAL_CFGVAL(CDS_NAME)
+#define DEFAULT_CS_INTERNAL_CDS_NAME "CS_CDS"
 
 /**
  * \brief Mission specific version number for CS application
@@ -320,7 +286,8 @@
  *       Must be defined as a numeric value that is greater than
  *       or equal to zero.
  */
-#define CS_MISSION_REV 0
+#define CS_MISSION_REV                  CS_INTERNAL_CFGVAL(MISSION_REV)
+#define DEFAULT_CS_INTERNAL_MISSION_REV 0
 
 /**\}*/
 

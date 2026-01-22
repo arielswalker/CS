@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -33,6 +32,19 @@
 #include "cs_msg.h"
 
 /**
+ * \brief Process housekeeping request
+ *
+ *  \par Description
+ *       Processes an on-board housekeeping request message.
+ *
+ *  \par Assumptions, External Events, and Notes:
+ *       This command does not affect the command execution counter
+ *
+ *  \param[in] CmdPtr Command pointer, verified non-null in CS_AppMain
+ */
+CFE_Status_t CS_SendHkCmd(const CS_SendHkCmd_t *CmdPtr);
+
+/**
  * \brief Process noop command
  *
  *  \par Description
@@ -45,7 +57,7 @@
  *
  *  \sa #CS_NOOP_CC
  */
-void CS_NoopCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_NoopCmd(const CS_NoopCmd_t *CmdPtr);
 
 /**
  * \brief Process reset counters command
@@ -63,7 +75,7 @@ void CS_NoopCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_RESET_CC
  */
-void CS_ResetCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_ResetCmd(const CS_ResetCmd_t *CmdPtr);
 
 /**
  * \brief process a background checking cycle
@@ -77,7 +89,7 @@ void CS_ResetCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \param[in] CmdPtr Command pointer, verified non-null in CS_AppMain
  */
-void CS_BackgroundCheckCycle(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_BackgroundCheckCycleCmd(const CS_BackgroundCheckCycleCmd_t *CmdPtr);
 
 /**
  * \brief Process a disable overall background checking command
@@ -91,7 +103,7 @@ void CS_BackgroundCheckCycle(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_DISABLE_ALL_CS_CC
  */
-void CS_DisableAllCSCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_DisableAllCSCmd(const CS_DisableAllCSCmd_t *CmdPtr);
 
 /**
  * \brief Process an enable overall background checking command
@@ -106,7 +118,7 @@ void CS_DisableAllCSCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_ENABLE_ALL_CS_CC
  */
-void CS_EnableAllCSCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_EnableAllCSCmd(const CS_EnableAllCSCmd_t *CmdPtr);
 
 /**
  * \brief Process a disable background checking for the cFE core
@@ -125,7 +137,7 @@ void CS_EnableAllCSCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_DISABLE_CFE_CORE_CC
  */
-void CS_DisableCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_DisableCfeCoreCmd(const CS_DisableCfeCoreCmd_t *CmdPtr);
 
 /**
  * \brief Process an enable background checking for the cFE core code
@@ -144,7 +156,7 @@ void CS_DisableCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_ENABLE_CFE_CORE_CC
  */
-void CS_EnableCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_EnableCfeCoreCmd(const CS_EnableCfeCoreCmd_t *CmdPtr);
 
 /**
  * \brief Process a disable background checking for the OS code
@@ -163,7 +175,7 @@ void CS_EnableCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_DISABLE_OS_CC
  */
-void CS_DisableOSCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_DisableOSCmd(const CS_DisableOSCmd_t *CmdPtr);
 
 /**
  * \brief Process an enable background checking for the OS code
@@ -182,7 +194,7 @@ void CS_DisableOSCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_ENABLE_OS_CC
  */
-void CS_EnableOSCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_EnableOSCmd(const CS_EnableOSCmd_t *CmdPtr);
 
 /**
  * \brief Process a report baseline of the cFE Core command
@@ -198,7 +210,7 @@ void CS_EnableOSCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_REPORT_BASELINE_CFE_CORE_CC
  */
-void CS_ReportBaselineCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_ReportBaselineCfeCoreCmd(const CS_ReportBaselineCfeCoreCmd_t *CmdPtr);
 
 /**
  * \brief Process a report baseline of the OS command
@@ -214,7 +226,7 @@ void CS_ReportBaselineCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_REPORT_BASELINE_OS_CC
  */
-void CS_ReportBaselineOSCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_ReportBaselineOSCmd(const CS_ReportBaselineOSCmd_t *CmdPtr);
 
 /**
  * \brief Process a recopmute baseline of the cFE core code segment command
@@ -230,7 +242,7 @@ void CS_ReportBaselineOSCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_RECOMPUTE_BASELINE_CFE_CORE_CC
  */
-void CS_RecomputeBaselineCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_RecomputeBaselineCfeCoreCmd(const CS_RecomputeBaselineCfeCoreCmd_t *CmdPtr);
 
 /**
  * \brief Process a recopmute baseline of the OS command
@@ -246,7 +258,7 @@ void CS_RecomputeBaselineCfeCoreCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_RECOMPUTE_BASELINE_OS_CC
  */
-void CS_RecomputeBaselineOSCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_RecomputeBaselineOSCmd(const CS_RecomputeBaselineOSCmd_t *CmdPtr);
 
 /**
  * \brief Process a start a one shot checksum command
@@ -261,7 +273,7 @@ void CS_RecomputeBaselineOSCmd(const CS_NoArgsCmd_t *CmdPtr);
  *
  *  \sa #CS_ONE_SHOT_CC
  */
-void CS_OneShotCmd(const CS_OneShotCmd_t *CmdPtr);
+CFE_Status_t CS_OneShotCmd(const CS_OneShotCmd_t *CmdPtr);
 
 /**
  * \brief Process a cancel one shot checksum command
@@ -276,6 +288,6 @@ void CS_OneShotCmd(const CS_OneShotCmd_t *CmdPtr);
  *
  *  \sa #CS_CANCEL_ONE_SHOT_CC
  */
-void CS_CancelOneShotCmd(const CS_NoArgsCmd_t *CmdPtr);
+CFE_Status_t CS_CancelOneShotCmd(const CS_CancelOneShotCmd_t *CmdPtr);
 
 #endif

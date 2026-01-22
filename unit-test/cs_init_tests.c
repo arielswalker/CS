@@ -1,8 +1,7 @@
 /************************************************************************
- * NASA Docket No. GSC-18,915-1, and identified as “cFS Checksum
- * Application version 2.5.1”
+ * NASA Docket No. GSC-19,200-1, and identified as "cFS Draco"
  *
- * Copyright (c) 2021 United States Government as represented by the
+ * Copyright (c) 2023 United States Government as represented by the
  * Administrator of the National Aeronautics and Space Administration.
  * All Rights Reserved.
  *
@@ -24,7 +23,7 @@
 #include "cs_init.h"
 #include "cs_msg.h"
 #include "cs_msgdefs.h"
-#include "cs_events.h"
+#include "cs_eventids.h"
 #include "cs_version.h"
 #include "cs_utils.h"
 #include "cs_test_utils.h"
@@ -185,6 +184,11 @@ void CS_Init_Test_TableInitNominal(void)
 {
     CFE_Status_t Result;
 
+    CS_AppData.HkPacket.Payload.EepromCSState = CS_ChecksumState_ENABLED;
+    CS_AppData.HkPacket.Payload.MemoryCSState = CS_ChecksumState_ENABLED;
+    CS_AppData.HkPacket.Payload.TablesCSState = CS_ChecksumState_ENABLED;
+    CS_AppData.HkPacket.Payload.AppCSState    = CS_ChecksumState_ENABLED;
+
     /* Execute the function being tested */
     Result = CS_InitAllTables();
 
@@ -196,6 +200,11 @@ void CS_Init_Test_TableInitNominal(void)
 
     UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
                   call_count_CFE_EVS_SendEvent);
+
+    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.EepromCSState, CS_ChecksumState_ENABLED);
+    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.MemoryCSState, CS_ChecksumState_ENABLED);
+    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.TablesCSState, CS_ChecksumState_ENABLED);
+    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.AppCSState, CS_ChecksumState_ENABLED);
 }
 
 void CS_Init_Test_TableInitErrorEEPROM(void)
@@ -204,12 +213,13 @@ void CS_Init_Test_TableInitErrorEEPROM(void)
     int32        strCmpResult;
     char         ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "Table initialization failed for EEPROM: 0x%%08X");
+    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Table initialization failed for %%s: 0x%%08X");
 
     /* Set to generate error message CS_INIT_EEPROM_ERR_EID */
 
-    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 1, -1);
+    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 1 + CS_ChecksumType_EEPROM_TABLE, -1);
+
+    CS_AppData.HkPacket.Payload.EepromCSState = CS_ChecksumState_ENABLED;
 
     /* Execute the function being tested */
     Result = CS_InitAllTables();
@@ -226,9 +236,10 @@ void CS_Init_Test_TableInitErrorEEPROM(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
+    /* Generates 1 event message we don't care about in this test */
     UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
-    /* Generates 1 event message we don't care about in this test */
+    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.EepromCSState, CS_ChecksumState_DISABLED);
 }
 
 void CS_Init_Test_TableInitErrorMemory(void)
@@ -237,8 +248,10 @@ void CS_Init_Test_TableInitErrorMemory(void)
     int32        strCmpResult;
     char         ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "Table initialization failed for Memory: 0x%%08X");
+    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Table initialization failed for %%s: 0x%%08X");
+
+    CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].GlobalState = NULL;
+    CS_AppData.HkPacket.Payload.MemoryCSState                = CS_ChecksumState_ENABLED;
 
     /* Set to prevent unintended error messages */
 
@@ -246,8 +259,7 @@ void CS_Init_Test_TableInitErrorMemory(void)
      * Combining a SetReturnCode and a SetFunctionHook in order to return CFE_SUCCESS all runs except the one specified
      */
 
-    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 1, CFE_SUCCESS);
-    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 1, -1);
+    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 1 + CS_ChecksumType_MEMORY_TABLE, -1);
 
     /* Execute the function being tested */
     Result = CS_InitAllTables();
@@ -267,6 +279,7 @@ void CS_Init_Test_TableInitErrorMemory(void)
     UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
     /* Generates 1 event message we don't care about in this test */
+    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.MemoryCSState, CS_ChecksumState_DISABLED);
 }
 
 void CS_Init_Test_TableInitErrorApps(void)
@@ -275,16 +288,16 @@ void CS_Init_Test_TableInitErrorApps(void)
     int32        strCmpResult;
     char         ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Table initialization failed for Apps: 0x%%08X");
+    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Table initialization failed for %%s: 0x%%08X");
 
+    CS_AppData.HkPacket.Payload.AppCSState = CS_ChecksumState_ENABLED;
     /* Set to prevent unintended error messages */
 
     /* Set to generate error message CS_INIT_APP_ERR_EID.
      * Combining a SetReturnCode and a SetFunctionHook in order to return CFE_SUCCESS all runs except the one specified
      */
 
-    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 2, CFE_SUCCESS);
-    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 1, -1);
+    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 1 + CS_ChecksumType_APP_TABLE, -1);
 
     /* Execute the function being tested */
     Result = CS_InitAllTables();
@@ -304,6 +317,7 @@ void CS_Init_Test_TableInitErrorApps(void)
     UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
     /* Generates 1 event message we don't care about in this test */
+    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.AppCSState, CS_ChecksumState_DISABLED);
 }
 
 void CS_Init_Test_TableInitErrorTables(void)
@@ -312,17 +326,16 @@ void CS_Init_Test_TableInitErrorTables(void)
     int32        strCmpResult;
     char         ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
-             "Table initialization failed for Tables: 0x%%08X");
+    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Table initialization failed for %%s: 0x%%08X");
 
+    CS_AppData.HkPacket.Payload.TablesCSState = CS_ChecksumState_DISABLED;
     /* Set to prevent unintended error messages */
 
     /* Set to generate error message CS_INIT_TABLES_ERR_EID.
      * Combining a SetReturnCode and a SetFunctionHook in order to return CFE_SUCCESS all runs except the one specified
      */
 
-    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 3, CFE_SUCCESS);
-    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 1, -1);
+    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 1 + CS_ChecksumType_TABLES_TABLE, -1);
 
     /* Execute the function being tested */
     Result = CS_InitAllTables();
@@ -342,6 +355,17 @@ void CS_Init_Test_TableInitErrorTables(void)
     UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
     /* Generates 1 event message we don't care about in this test */
+    UtAssert_UINT8_EQ(CS_AppData.HkPacket.Payload.TablesCSState, CS_ChecksumState_DISABLED);
+}
+
+void CS_Init_Test_TableInitErrorOther(void)
+{
+    UT_SetDeferredRetcode(UT_KEY(CS_TableInit), 1, -1);
+
+    /* Execute the function being tested */
+    UtAssert_INT32_EQ(CS_InitAllTables(), -1);
+
+    UtAssert_STUB_COUNT(CFE_EVS_SendEvent, 0);
 }
 
 void CS_Init_Test_CFETextSegmentInfoError(void)
@@ -421,6 +445,7 @@ void UtTest_Setup(void)
     UtTest_Add(CS_Init_Test_TableInitErrorMemory, CS_Test_Setup, CS_Test_TearDown, "CS_Init_Test_TableInitErrorMemory");
     UtTest_Add(CS_Init_Test_TableInitErrorApps, CS_Test_Setup, CS_Test_TearDown, "CS_Init_Test_TableInitErrorApps");
     UtTest_Add(CS_Init_Test_TableInitErrorTables, CS_Test_Setup, CS_Test_TearDown, "CS_Init_Test_TableInitErrorTables");
+    UtTest_Add(CS_Init_Test_TableInitErrorOther, CS_Test_Setup, CS_Test_TearDown, "CS_Init_Test_TableInitErrorOther");
     UtTest_Add(CS_Init_Test_CFETextSegmentInfoError, CS_Test_Setup, CS_Test_TearDown,
                "CS_Init_Test_CFETextSegmentInfoError");
     UtTest_Add(CS_Init_Test_KernelTextSegmentInfoError, CS_Test_Setup, CS_Test_TearDown,
