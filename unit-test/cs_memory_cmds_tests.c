@@ -69,7 +69,8 @@ void CS_DisableMemoryCmd_Test(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -88,7 +89,8 @@ void CS_DisableMemoryCmd_Test_OneShot(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 0,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 0",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -119,7 +121,8 @@ void CS_EnableMemoryCmd_Test(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -138,7 +141,8 @@ void CS_EnableMemoryCmd_Test_OneShot(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 0,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 0",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -147,7 +151,7 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_Computed(void)
     CS_ReportBaselineEntryIDMemoryCmd_t CmdPacket;
     int32                               strCmpResult;
     char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-    CS_Res_EepromMemory_Table_Entry_t * ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
+    CS_Res_EepromMemory_Table_Entry_t  *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
     snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH, "Report baseline of Memory Entry %%d is 0x%%08X");
@@ -173,7 +177,8 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_Computed(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -182,10 +187,11 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_NotYetComputed(void)
     CS_ReportBaselineEntryIDMemoryCmd_t CmdPacket;
     int32                               strCmpResult;
     char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-    CS_Res_EepromMemory_Table_Entry_t * ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
+    CS_Res_EepromMemory_Table_Entry_t  *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Report baseline of Memory Entry %%d has not been computed yet");
 
     CmdPacket.Payload.EntryID = 1;
@@ -209,7 +215,8 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_NotYetComputed(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -220,7 +227,8 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void
     char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Memory report baseline failed, Entry ID invalid: %%d, State: %%d Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_MEMORY_TABLE_ENTRIES;
@@ -240,7 +248,8 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -249,10 +258,11 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
     CS_ReportBaselineEntryIDMemoryCmd_t CmdPacket;
     int32                               strCmpResult;
     char                                ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
-    CS_Res_EepromMemory_Table_Entry_t * ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
+    CS_Res_EepromMemory_Table_Entry_t  *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Memory report baseline failed, Entry ID invalid: %%d, State: %%d Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
@@ -274,7 +284,8 @@ void CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -286,7 +297,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_Nominal(void)
     CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of Memory Entry ID %%d started");
 
     CmdPacket.Payload.EntryID = 1;
@@ -320,7 +332,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_Nominal(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -332,7 +345,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_CreateChildTaskError(void)
     CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of Memory Entry ID %%d failed, ES_CreateChildTask returned:  0x%%08X");
 
     CmdPacket.Payload.EntryID = 1;
@@ -369,7 +383,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_CreateChildTaskError(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -380,7 +395,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
     char                            ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Memory recompute baseline of entry failed, Entry ID invalid: %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_MEMORY_TABLE_ENTRIES;
@@ -400,7 +416,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -412,7 +429,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
     CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Memory recompute baseline of entry failed, Entry ID invalid: %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
@@ -434,7 +452,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -445,7 +464,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_RecomputeInProgress(void)
     char                            ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of Memory Entry ID %%d failed: child task in use");
 
     CmdPacket.Payload.EntryID = 1;
@@ -467,7 +487,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_RecomputeInProgress(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -478,7 +499,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_OneShot(void)
     char                            ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Recompute baseline of Memory Entry ID %%d failed: child task in use");
 
     CmdPacket.Payload.EntryID = 1;
@@ -501,7 +523,8 @@ void CS_RecomputeBaselineMemoryCmd_Test_OneShot(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -543,7 +566,8 @@ void CS_EnableEntryIDMemoryCmd_Test_Nominal(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -556,10 +580,12 @@ void CS_EnableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty(void)
     CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString[0],
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Checksumming of Memory Entry ID %%d is Enabled");
 
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString[1],
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "CS unable to update memory definition table for entry %%d, State: %%d");
 
     CmdPacket.Payload.EntryID = 1;
@@ -598,7 +624,8 @@ void CS_EnableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 2,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 2",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -609,7 +636,8 @@ void CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
     char                        ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Enable Memory entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_MEMORY_TABLE_ENTRIES;
@@ -629,7 +657,8 @@ void CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -641,7 +670,8 @@ void CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
     CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Enable Memory entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
@@ -663,7 +693,8 @@ void CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -682,7 +713,8 @@ void CS_EnableEntryIDMemoryCmd_Test_OneShot(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 0,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 0",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -695,7 +727,8 @@ void CS_DisableEntryIDMemoryCmd_Test_Nominal(void)
     CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Checksumming of Memory Entry ID %%d is Disabled");
 
     CmdPacket.Payload.EntryID = 1;
@@ -729,7 +762,8 @@ void CS_DisableEntryIDMemoryCmd_Test_Nominal(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -742,10 +776,12 @@ void CS_DisableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty(void)
     CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString[0], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString[0],
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Checksumming of Memory Entry ID %%d is Disabled");
 
-    snprintf(ExpectedEventString[1], CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString[1],
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "CS unable to update memory definition table for entry %%d, State: %%d");
 
     CmdPacket.Payload.EntryID = 1;
@@ -786,7 +822,8 @@ void CS_DisableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 2, "CFE_EVS_SendEvent was called %u time(s), expected 2",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 2,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 2",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -797,7 +834,8 @@ void CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
     char                         ExpectedEventString[CFE_MISSION_EVS_MAX_MESSAGE_LENGTH];
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Disable Memory entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = CS_MAX_NUM_MEMORY_TABLE_ENTRIES;
@@ -817,7 +855,8 @@ void CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -829,7 +868,8 @@ void CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
     CS_Res_EepromMemory_Table_Entry_t *ResMemoryTblPtr = CS_AppData.Tbl[CS_ChecksumType_MEMORY_TABLE].ResAddr;
 
     memset(&CmdPacket, 0, sizeof(CmdPacket));
-    snprintf(ExpectedEventString, CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
+    snprintf(ExpectedEventString,
+             CFE_MISSION_EVS_MAX_MESSAGE_LENGTH,
              "Disable Memory entry failed, invalid Entry ID:  %%d, State: %%d, Max ID: %%d");
 
     CmdPacket.Payload.EntryID = 1;
@@ -851,7 +891,8 @@ void CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -870,7 +911,8 @@ void CS_DisableEntryIDMemoryCmd_Test_OneShot(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 0, "CFE_EVS_SendEvent was called %u time(s), expected 0",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 0,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 0",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -905,7 +947,8 @@ void CS_GetEntryIDMemoryCmd_Test_Nominal(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -939,7 +982,8 @@ void CS_GetEntryIDMemoryCmd_Test_AddressNotFound(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -975,7 +1019,8 @@ void CS_GetEntryIDMemoryCmd_Test_AddressPtr(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -1011,7 +1056,8 @@ void CS_GetEntryIDMemoryCmd_Test_State(void)
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
-    UtAssert_True(call_count_CFE_EVS_SendEvent == 1, "CFE_EVS_SendEvent was called %u time(s), expected 1",
+    UtAssert_True(call_count_CFE_EVS_SendEvent == 1,
+                  "CFE_EVS_SendEvent was called %u time(s), expected 1",
                   call_count_CFE_EVS_SendEvent);
 }
 
@@ -1023,55 +1069,101 @@ void UtTest_Setup(void)
     UtTest_Add(CS_EnableMemoryCmd_Test, CS_Test_Setup, CS_Test_TearDown, "CS_EnableMemoryCmd_Test");
     UtTest_Add(CS_EnableMemoryCmd_Test_OneShot, CS_Test_Setup, CS_Test_TearDown, "CS_EnableMemoryCmd_Test_OneShot");
 
-    UtTest_Add(CS_ReportBaselineEntryIDMemoryCmd_Test_Computed, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_ReportBaselineEntryIDMemoryCmd_Test_Computed,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_ReportBaselineEntryIDMemoryCmd_Test_Computed");
-    UtTest_Add(CS_ReportBaselineEntryIDMemoryCmd_Test_NotYetComputed, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_ReportBaselineEntryIDMemoryCmd_Test_NotYetComputed,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_ReportBaselineEntryIDMemoryCmd_Test_NotYetComputed");
-    UtTest_Add(CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh");
-    UtTest_Add(CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_ReportBaselineEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty");
 
-    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_Nominal, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_Nominal,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_RecomputeBaselineMemoryCmd_Test_Nominal");
-    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_CreateChildTaskError, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_CreateChildTaskError,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_RecomputeBaselineMemoryCmd_Test_CreateChildTaskError");
-    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh");
-    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorStateEmpty, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorStateEmpty,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_RecomputeBaselineMemoryCmd_Test_InvalidEntryErrorStateEmpty");
-    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_RecomputeInProgress, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_RecomputeInProgress,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_RecomputeBaselineMemoryCmd_Test_RecomputeInProgress");
-    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_OneShot, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_RecomputeBaselineMemoryCmd_Test_OneShot,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_RecomputeBaselineMemoryCmd_Test_OneShot");
 
-    UtTest_Add(CS_EnableEntryIDMemoryCmd_Test_Nominal, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_EnableEntryIDMemoryCmd_Test_Nominal,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_EnableEntryIDMemoryCmd_Test_Nominal");
-    UtTest_Add(CS_EnableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_EnableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_EnableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty");
-    UtTest_Add(CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh");
-    UtTest_Add(CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_EnableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty");
-    UtTest_Add(CS_EnableEntryIDMemoryCmd_Test_OneShot, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_EnableEntryIDMemoryCmd_Test_OneShot,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_EnableEntryIDMemoryCmd_Test_OneShots");
 
-    UtTest_Add(CS_DisableEntryIDMemoryCmd_Test_Nominal, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_DisableEntryIDMemoryCmd_Test_Nominal,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_DisableEntryIDMemoryCmd_Test_Nominal");
-    UtTest_Add(CS_DisableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_DisableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_DisableEntryIDMemoryCmd_Test_DefMemoryTblPtrStateEmpty");
-    UtTest_Add(CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorEntryIDTooHigh");
-    UtTest_Add(CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_DisableEntryIDMemoryCmd_Test_InvalidEntryErrorStateEmpty");
-    UtTest_Add(CS_DisableEntryIDMemoryCmd_Test_OneShot, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_DisableEntryIDMemoryCmd_Test_OneShot,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_DisableEntryIDMemoryCmd_Test_OneShot");
 
-    UtTest_Add(CS_GetEntryIDMemoryCmd_Test_Nominal, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_GetEntryIDMemoryCmd_Test_Nominal,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_GetEntryIDMemoryCmd_Test_Nominal");
-    UtTest_Add(CS_GetEntryIDMemoryCmd_Test_AddressNotFound, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_GetEntryIDMemoryCmd_Test_AddressNotFound,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_GetEntryIDMemoryCmd_Test_AddressNotFound");
-    UtTest_Add(CS_GetEntryIDMemoryCmd_Test_AddressPtr, CS_Test_Setup, CS_Test_TearDown,
+    UtTest_Add(CS_GetEntryIDMemoryCmd_Test_AddressPtr,
+               CS_Test_Setup,
+               CS_Test_TearDown,
                "CS_GetEntryIDMemoryCmd_Test_AddressPtr");
     UtTest_Add(CS_GetEntryIDMemoryCmd_Test_State, CS_Test_Setup, CS_Test_TearDown, "CS_GetEntryIDMemoryCmd_Test_State");
 }

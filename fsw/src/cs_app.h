@@ -109,7 +109,7 @@ typedef struct
     CS_Res_EepromMemory_Table_Entry_t *RecomputeEepromMemoryEntryPtr; /**< \brief Pointer to an entry to recompute in
                                                                          the EEPROM or Memory table */
 
-    CS_Res_App_Table_Entry_t *RecomputeAppEntryPtr;       /**< \brief Pointer to an entry to recompute in the
+    CS_Res_App_Table_Entry_t    *RecomputeAppEntryPtr;    /**< \brief Pointer to an entry to recompute in the
                                                                       Application table */
     CS_Res_Tables_Table_Entry_t *RecomputeTablesEntryPtr; /**< \brief Pointer to an entry to recompute in the
                                                                       Tables table */

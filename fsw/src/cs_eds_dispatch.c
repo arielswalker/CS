@@ -106,7 +106,9 @@ CFE_Status_t CS_AppPipe(const CFE_SB_Buffer_t *BufPtr)
 
         if (status == CFE_STATUS_UNKNOWN_MSG_ID)
         {
-            CFE_EVS_SendEvent(CS_MID_ERR_EID, CFE_EVS_EventType_ERROR, "Invalid command pipe message ID: 0x%08lX",
+            CFE_EVS_SendEvent(CS_MID_ERR_EID,
+                              CFE_EVS_EventType_ERROR,
+                              "Invalid command pipe message ID: 0x%08lX",
                               (unsigned long)CFE_SB_MsgIdToValue(MsgId));
         }
         else
@@ -115,15 +117,20 @@ CFE_Status_t CS_AppPipe(const CFE_SB_Buffer_t *BufPtr)
             if (status == CFE_STATUS_WRONG_MSG_LENGTH)
             {
                 CFE_MSG_GetSize(&BufPtr->Msg, &MsgSize);
-                CFE_EVS_SendEvent(CS_CMD_LEN_ERR_EID, CFE_EVS_EventType_ERROR,
+                CFE_EVS_SendEvent(CS_CMD_LEN_ERR_EID,
+                                  CFE_EVS_EventType_ERROR,
                                   "Invalid msg length: ID = 0x%08lX, CC = %d, Len = %lu",
-                                  (unsigned long)CFE_SB_MsgIdToValue(MsgId), MsgFc, (unsigned long)MsgSize);
+                                  (unsigned long)CFE_SB_MsgIdToValue(MsgId),
+                                  MsgFc,
+                                  (unsigned long)MsgSize);
             }
             else
             {
-                CFE_EVS_SendEvent(CS_CC_ERR_EID, CFE_EVS_EventType_ERROR,
+                CFE_EVS_SendEvent(CS_CC_ERR_EID,
+                                  CFE_EVS_EventType_ERROR,
                                   "Invalid ground command code: ID = 0x%08lX, CC = %d",
-                                  (unsigned long)CFE_SB_MsgIdToValue(MsgId), MsgFc);
+                                  (unsigned long)CFE_SB_MsgIdToValue(MsgId),
+                                  MsgFc);
             }
         }
 
