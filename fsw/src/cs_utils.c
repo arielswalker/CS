@@ -1160,7 +1160,7 @@ bool CS_CheckRecomputeOneshot(void)
                           CFE_EVS_EventType_ERROR,
                           "Cannot perform command. Recompute or oneshot in progress.");
 
-        CS_AppData.HkPacket.Payload.CmdErrCounter++;
+        CS_AppData.HkPacket.Payload.CommandErrorCounter++;
 
         Result = true;
     }

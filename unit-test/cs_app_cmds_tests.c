@@ -102,7 +102,7 @@ void CS_DisableAppsCmd_Test(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -122,7 +122,7 @@ void CS_DisableAppsCmd_Test_OneShot(void)
     CS_DisableAppsCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 0, "CS_AppData.HkPacket.Payload.CmdCounter == 0");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 0, "CS_AppData.HkPacket.Payload.CommandCounter == 0");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -154,9 +154,9 @@ void CS_EnableAppsCmd_Test(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -176,7 +176,7 @@ void CS_EnableAppsCmd_Test_OneShot(void)
     CS_EnableAppsCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 0, "CS_AppData.HkPacket.Payload.CmdCounter == 0");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 0, "CS_AppData.HkPacket.Payload.CommandCounter == 0");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -219,7 +219,7 @@ void CS_ReportBaselineAppCmd_Test_Baseline(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -263,9 +263,9 @@ void CS_ReportBaselineAppCmd_Test_NoBaseline(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -303,7 +303,8 @@ void CS_ReportBaselineAppCmd_Test_BaselineInvalidName(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdErrCounter == 1, "CS_AppData.HkPacket.Payload.CmdErrCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandErrorCounter == 1,
+                  "CS_AppData.HkPacket.Payload.CommandErrorCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -345,7 +346,8 @@ void CS_RecomputeBaselineAppCmd_Test_OneShot(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdErrCounter == 1, "CS_AppData.HkPacket.Payload.CmdErrCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandErrorCounter == 1,
+                  "CS_AppData.HkPacket.Payload.CommandErrorCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -393,9 +395,9 @@ void CS_RecomputeBaselineAppCmd_Test_Nominal(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -445,7 +447,8 @@ void CS_RecomputeBaselineAppCmd_Test_CreateChildTaskError(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdErrCounter == 1, "CS_AppData.HkPacket.Payload.CmdErrCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandErrorCounter == 1,
+                  "CS_AppData.HkPacket.Payload.CommandErrorCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -487,7 +490,8 @@ void CS_RecomputeBaselineAppCmd_Test_UnknownNameError(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdErrCounter == 1, "CS_AppData.HkPacket.Payload.CmdErrCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandErrorCounter == 1,
+                  "CS_AppData.HkPacket.Payload.CommandErrorCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -528,7 +532,8 @@ void CS_RecomputeBaselineAppCmd_Test_RecomputeInProgress(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdErrCounter == 1, "CS_AppData.HkPacket.Payload.CmdErrCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandErrorCounter == 1,
+                  "CS_AppData.HkPacket.Payload.CommandErrorCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -579,9 +584,9 @@ void CS_DisableNameAppCmd_Test_Nominal(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -640,9 +645,9 @@ void CS_DisableNameAppCmd_Test_UpdateAppsDefinitionTableError(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -684,7 +689,8 @@ void CS_DisableNameAppCmd_Test_UnknownNameError(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdErrCounter == 1, "CS_AppData.HkPacket.Payload.CmdErrCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandErrorCounter == 1,
+                  "CS_AppData.HkPacket.Payload.CommandErrorCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -704,7 +710,7 @@ void CS_DisableNameAppCmd_Test_OneShot(void)
     CS_DisableNameAppCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 0, "CS_AppData.HkPacket.Payload.CmdCounter == 0");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 0, "CS_AppData.HkPacket.Payload.CommandCounter == 0");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -755,9 +761,9 @@ void CS_EnableNameAppCmd_Test_Nominal(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[0].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -816,9 +822,9 @@ void CS_EnableNameAppCmd_Test_UpdateAppsDefinitionTableError(void)
 
     UtAssert_True(strCmpResult == 0, "Event string matched expected result, '%s'", context_CFE_EVS_SendEvent[1].Spec);
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 1, "CS_AppData.HkPacket.Payload.CmdCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 1, "CS_AppData.HkPacket.Payload.CommandCounter == 1");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 
@@ -854,7 +860,8 @@ void CS_EnableNameAppCmd_Test_UnknownNameError(void)
     CS_EnableNameAppCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdErrCounter == 1, "CS_AppData.HkPacket.Payload.CmdErrCounter == 1");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandErrorCounter == 1,
+                  "CS_AppData.HkPacket.Payload.CommandErrorCounter == 1");
 
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventID, CS_ENABLE_APP_UNKNOWN_NAME_ERR_EID);
     UtAssert_INT32_EQ(context_CFE_EVS_SendEvent[0].EventType, CFE_EVS_EventType_ERROR);
@@ -881,7 +888,7 @@ void CS_EnableNameAppCmd_Test_OneShot(void)
     CS_EnableNameAppCmd(&CmdPacket);
 
     /* Verify results */
-    UtAssert_True(CS_AppData.HkPacket.Payload.CmdCounter == 0, "CS_AppData.HkPacket.Payload.CmdCounter == 0");
+    UtAssert_True(CS_AppData.HkPacket.Payload.CommandCounter == 0, "CS_AppData.HkPacket.Payload.CommandCounter == 0");
 
     call_count_CFE_EVS_SendEvent = UT_GetStubCount(UT_KEY(CFE_EVS_SendEvent));
 

@@ -54,7 +54,7 @@ typedef union
 
     CS_SendHkCmd_t                      SendHkCmd;
     CS_NoopCmd_t                        NoopCmd;
-    CS_ResetCmd_t                       ResetCmd;
+    CS_ResetCountersCmd_t               ResetCountersCmd;
     CS_BackgroundCheckCycleCmd_t        BackgroundCheckCycle;
     CS_DisableAllCSCmd_t                DisableAllCSCmd;
     CS_EnableAllCSCmd_t                 EnableAllCSCmd;
@@ -134,7 +134,7 @@ void CS_App_TestCmdTlmAlign(void)
     UtAssert_True(TLM_STRUCT_DATA_IS_32_ALIGNED(CS_HkPacket_t), "CS_HkPacket_t is 32-bit aligned");
     UtAssert_True(CMD_STRUCT_DATA_IS_32_ALIGNED(CS_SendHkCmd_t), "CS_SendHkCmd_t is 32-bit aligned");
     UtAssert_True(CMD_STRUCT_DATA_IS_32_ALIGNED(CS_NoopCmd_t), "CS_NoopCmd_t is 32-bit aligned");
-    UtAssert_True(CMD_STRUCT_DATA_IS_32_ALIGNED(CS_ResetCmd_t), "CS_ResetCmd_t is 32-bit aligned");
+    UtAssert_True(CMD_STRUCT_DATA_IS_32_ALIGNED(CS_ResetCountersCmd_t), "CS_ResetCountersCmd_t is 32-bit aligned");
     UtAssert_True(CMD_STRUCT_DATA_IS_32_ALIGNED(CS_BackgroundCheckCycleCmd_t),
                   "CS_BackgroundCheckCycleCmd_t is 32-bit aligned");
     UtAssert_True(CMD_STRUCT_DATA_IS_32_ALIGNED(CS_DisableAllCSCmd_t), "CS_DisableAllCSCmd_t is 32-bit aligned");

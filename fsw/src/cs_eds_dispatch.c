@@ -79,7 +79,7 @@ static const EdsDispatchTable_EdsComponent_CS_Application_CFE_SB_Telecommand_t C
             .ReportBaselineEntryIDMemoryCmd_indication = CS_ReportBaselineEntryIDMemoryCmd,
             .ReportBaselineOSCmd_indication            = CS_ReportBaselineOSCmd,
             .ReportBaselineTableCmd_indication         = CS_ReportBaselineTableCmd,
-            .ResetCmd_indication                       = CS_ResetCmd,
+            .ResetCountersCmd_indication                       = CS_ResetCountersCmd,
         },
     .SEND_HK          = {.indication = CS_SendHkCmd},
     .BACKGROUND_CYCLE = {.indication = CS_BackgroundCheckCycleCmd}};
@@ -102,7 +102,7 @@ CFE_Status_t CS_AppPipe(const CFE_SB_Buffer_t *BufPtr)
     {
         CFE_MSG_GetMsgId(&BufPtr->Msg, &MsgId);
 
-        ++CS_AppData.HkPacket.Payload.CmdErrCounter;
+        ++CS_AppData.HkPacket.Payload.CommandErrorCounter;
 
         if (status == CFE_STATUS_UNKNOWN_MSG_ID)
         {

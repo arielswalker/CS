@@ -57,7 +57,7 @@ CFE_Status_t CS_DisableTablesCmd(const CS_DisableTablesCmd_t *CmdPtr)
         CFE_EVS_SendEvent(CS_DISABLE_TABLES_INF_EID,
                           CFE_EVS_EventType_INFORMATION,
                           "Checksumming of Tables is Disabled");
-        CS_AppData.HkPacket.Payload.CmdCounter++;
+        CS_AppData.HkPacket.Payload.CommandCounter++;
     }
 
     return CFE_SUCCESS;
@@ -79,7 +79,7 @@ CFE_Status_t CS_EnableTablesCmd(const CS_EnableTablesCmd_t *CmdPtr)
 #endif
 
         CFE_EVS_SendEvent(CS_ENABLE_TABLES_INF_EID, CFE_EVS_EventType_INFORMATION, "Checksumming of Tables is Enabled");
-        CS_AppData.HkPacket.Payload.CmdCounter++;
+        CS_AppData.HkPacket.Payload.CommandCounter++;
     }
 
     return CFE_SUCCESS;
@@ -117,7 +117,7 @@ CFE_Status_t CS_ReportBaselineTableCmd(const CS_ReportBaselineTableCmd_t *CmdPtr
                               "Report baseline of table %s has not been computed yet",
                               Name);
         }
-        CS_AppData.HkPacket.Payload.CmdCounter++;
+        CS_AppData.HkPacket.Payload.CommandCounter++;
     }
     else
     {
@@ -125,7 +125,7 @@ CFE_Status_t CS_ReportBaselineTableCmd(const CS_ReportBaselineTableCmd_t *CmdPtr
                           CFE_EVS_EventType_ERROR,
                           "Tables report baseline failed, table %s not found",
                           Name);
-        CS_AppData.HkPacket.Payload.CmdErrCounter++;
+        CS_AppData.HkPacket.Payload.CommandErrorCounter++;
     }
 
     return CFE_SUCCESS;
@@ -173,7 +173,7 @@ CFE_Status_t CS_RecomputeBaselineTableCmd(const CS_RecomputeBaselineTableCmd_t *
                                   CFE_EVS_EventType_DEBUG,
                                   "Recompute baseline of table %s started",
                                   Name);
-                CS_AppData.HkPacket.Payload.CmdCounter++;
+                CS_AppData.HkPacket.Payload.CommandCounter++;
             }
             else /* child task creation failed */
             {
@@ -182,7 +182,7 @@ CFE_Status_t CS_RecomputeBaselineTableCmd(const CS_RecomputeBaselineTableCmd_t *
                                   "Recompute baseline of table %s failed, CFE_ES_CreateChildTask returned: 0x%08X",
                                   Name,
                                   (unsigned int)Status);
-                CS_AppData.HkPacket.Payload.CmdErrCounter++;
+                CS_AppData.HkPacket.Payload.CommandErrorCounter++;
                 CS_AppData.HkPacket.Payload.RecomputeInProgress = false;
             }
         }
@@ -192,7 +192,7 @@ CFE_Status_t CS_RecomputeBaselineTableCmd(const CS_RecomputeBaselineTableCmd_t *
                               CFE_EVS_EventType_ERROR,
                               "Tables recompute baseline failed, table %s not found",
                               Name);
-            CS_AppData.HkPacket.Payload.CmdErrCounter++;
+            CS_AppData.HkPacket.Payload.CommandErrorCounter++;
         }
     }
     else
@@ -202,7 +202,7 @@ CFE_Status_t CS_RecomputeBaselineTableCmd(const CS_RecomputeBaselineTableCmd_t *
                           CFE_EVS_EventType_ERROR,
                           "Tables recompute baseline for table %s failed: child task in use",
                           Name);
-        CS_AppData.HkPacket.Payload.CmdErrCounter++;
+        CS_AppData.HkPacket.Payload.CommandErrorCounter++;
     }
 
     return CFE_SUCCESS;
@@ -248,7 +248,7 @@ CFE_Status_t CS_DisableNameTableCmd(const CS_DisableNameTableCmd_t *CmdPtr)
                                   Name);
             }
 
-            CS_AppData.HkPacket.Payload.CmdCounter++;
+            CS_AppData.HkPacket.Payload.CommandCounter++;
         }
         else
         {
@@ -256,7 +256,7 @@ CFE_Status_t CS_DisableNameTableCmd(const CS_DisableNameTableCmd_t *CmdPtr)
                               CFE_EVS_EventType_ERROR,
                               "Tables disable table command failed, table %s not found",
                               Name);
-            CS_AppData.HkPacket.Payload.CmdErrCounter++;
+            CS_AppData.HkPacket.Payload.CommandErrorCounter++;
         }
     } /* end InProgress if */
 
@@ -301,7 +301,7 @@ CFE_Status_t CS_EnableNameTableCmd(const CS_EnableNameTableCmd_t *CmdPtr)
                                   Name);
             }
 
-            CS_AppData.HkPacket.Payload.CmdCounter++;
+            CS_AppData.HkPacket.Payload.CommandCounter++;
         }
         else
         {
@@ -309,7 +309,7 @@ CFE_Status_t CS_EnableNameTableCmd(const CS_EnableNameTableCmd_t *CmdPtr)
                               CFE_EVS_EventType_ERROR,
                               "Tables enable table command failed, table %s not found",
                               Name);
-            CS_AppData.HkPacket.Payload.CmdErrCounter++;
+            CS_AppData.HkPacket.Payload.CommandErrorCounter++;
         }
     } /* end InProgress if */
 

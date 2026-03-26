@@ -63,7 +63,7 @@ bool CS_VerifyCmdLength(const CFE_MSG_Message_t *msg, size_t ExpectedLength)
                           (unsigned long)ActualLength,
                           (unsigned long)ExpectedLength);
         Result = false;
-        CS_AppData.HkPacket.Payload.CmdErrCounter++;
+        CS_AppData.HkPacket.Payload.CommandErrorCounter++;
     }
     return Result;
 }
@@ -120,7 +120,7 @@ CFE_Status_t CS_AppPipe(const CFE_SB_Buffer_t *BufPtr)
                           "Invalid command pipe message ID: 0x%08lX",
                           (unsigned long)CFE_SB_MsgIdToValue(MessageID));
 
-        CS_AppData.HkPacket.Payload.CmdErrCounter++;
+        CS_AppData.HkPacket.Payload.CommandErrorCounter++;
     }
 
     return CFE_SUCCESS;
@@ -149,10 +149,10 @@ void CS_ProcessCmd(const CFE_SB_Buffer_t *BufPtr)
             }
             break;
 
-        case CS_RESET_CC:
-            if (CS_VerifyCmdLength(&BufPtr->Msg, sizeof(CS_ResetCmd_t)))
+        case CS_RESET_COUNTERS_CC:
+            if (CS_VerifyCmdLength(&BufPtr->Msg, sizeof(CS_ResetCountersCmd_t)))
             {
-                CS_ResetCmd((const CS_ResetCmd_t *)BufPtr);
+                CS_ResetCountersCmd((const CS_ResetCountersCmd_t *)BufPtr);
             }
             break;
 
@@ -436,7 +436,7 @@ void CS_ProcessCmd(const CFE_SB_Buffer_t *BufPtr)
                               (unsigned long)CFE_SB_MsgIdToValue(MessageID),
                               CommandCode);
 
-            CS_AppData.HkPacket.Payload.CmdErrCounter++;
+            CS_AppData.HkPacket.Payload.CommandErrorCounter++;
             break;
     } /* end switch */
 }

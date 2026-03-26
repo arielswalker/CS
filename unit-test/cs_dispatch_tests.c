@@ -54,7 +54,7 @@ typedef union
 
     CS_SendHkCmd_t                      SendHkCmd;
     CS_NoopCmd_t                        NoopCmd;
-    CS_ResetCmd_t                       ResetCmd;
+    CS_ResetCountersCmd_t               ResetCountersCmd;
     CS_BackgroundCheckCycleCmd_t        BackgroundCheckCycle;
     CS_DisableAllCSCmd_t                DisableAllCSCmd;
     CS_EnableAllCSCmd_t                 EnableAllCSCmd;
@@ -99,7 +99,7 @@ typedef union
 
 const size_t UT_CMD_SIZE[] = {
     [CS_NOOP_CC]                            = sizeof(CS_NoopCmd_t),
-    [CS_RESET_CC]                           = sizeof(CS_ResetCmd_t),
+    [CS_RESET_COUNTERS_CC]                  = sizeof(CS_ResetCountersCmd_t),
     [CS_ONE_SHOT_CC]                        = sizeof(CS_OneShotCmd_t),
     [CS_CANCEL_ONE_SHOT_CC]                 = sizeof(CS_CancelOneShotCmd_t),
     [CS_ENABLE_ALL_CS_CC]                   = sizeof(CS_EnableAllCSCmd_t),
@@ -274,7 +274,7 @@ void CS_AppPipe_Test_NoopCmd(void)
                   call_count_CFE_EVS_SendEvent);
 }
 
-void CS_AppPipe_Test_ResetCmd(void)
+void CS_AppPipe_Test_ResetCountersCmd(void)
 {
     CFE_Status_t      Result;
     UT_CmdBuf_t       CmdBuf;
@@ -286,7 +286,7 @@ void CS_AppPipe_Test_ResetCmd(void)
     CS_AppData.ChildTaskTable = -1;
 
     TestMsgId = CFE_SB_ValueToMsgId(CS_CMD_MID);
-    FcnCode   = CS_RESET_CC;
+    FcnCode   = CS_RESET_COUNTERS_CC;
     UT_CS_SetupDispatchCheck(TestMsgId, FcnCode, true);
 
     /* Execute the function being tested */
@@ -1531,18 +1531,18 @@ void CS_ProcessCmd_NoopCmd_Test(void)
     UtAssert_STUB_COUNT(CS_NoopCmd, 1);
 }
 
-void CS_ProcessCmd_ResetCmd_Test(void)
+void CS_ProcessCmd_ResetCountersCmd_Test(void)
 {
     UT_CmdBuf_t       CmdBuf;
     CFE_SB_MsgId_t    TestMsgId = CFE_SB_ValueToMsgId(CS_CMD_MID);
-    CFE_MSG_FcnCode_t FcnCode   = CS_RESET_CC;
+    CFE_MSG_FcnCode_t FcnCode   = CS_RESET_COUNTERS_CC;
 
     UT_CS_SetupDispatchCheck(TestMsgId, FcnCode, true);
     /* Execute the function being tested */
     CS_ProcessCmd(&CmdBuf.Buf);
 
     /* Verify results */
-    UtAssert_STUB_COUNT(CS_ResetCmd, 1);
+    UtAssert_STUB_COUNT(CS_ResetCountersCmd, 1);
 }
 
 void CS_ProcessCmd_DisableAllCSCmd_Test(void)
@@ -2091,18 +2091,18 @@ void CS_ProcessCmd_NoopCmd_Test_VerifyError(void)
     UtAssert_STUB_COUNT(CS_NoopCmd, 0);
 }
 
-void CS_ProcessCmd_ResetCmd_Test_VerifyError(void)
+void CS_ProcessCmd_ResetCountersCmd_Test_VerifyError(void)
 {
     UT_CmdBuf_t       CmdBuf;
     CFE_SB_MsgId_t    TestMsgId = CFE_SB_ValueToMsgId(CS_CMD_MID);
-    CFE_MSG_FcnCode_t FcnCode   = CS_RESET_CC;
+    CFE_MSG_FcnCode_t FcnCode   = CS_RESET_COUNTERS_CC;
 
     UT_CS_SetupDispatchCheck(TestMsgId, FcnCode, false);
     /* Execute the function being tested */
     CS_ProcessCmd(&CmdBuf.Buf);
 
     /* Verify results */
-    UtAssert_STUB_COUNT(CS_ResetCmd, 0);
+    UtAssert_STUB_COUNT(CS_ResetCountersCmd, 0);
 }
 
 void CS_ProcessCmd_DisableAllCSCmd_Test_VerifyError(void)
@@ -2642,7 +2642,7 @@ void UtTest_Setup(void)
     UtTest_Add(CS_AppPipe_Test_TableUpdateErrors, CS_Test_Setup, CS_Test_TearDown, "CS_AppPipe_Test_TableUpdateErrors");
     UtTest_Add(CS_AppPipe_Test_BackgroundCycle, CS_Test_Setup, CS_Test_TearDown, "CS_AppPipe_Test_BackgroundCycle");
     UtTest_Add(CS_AppPipe_Test_NoopCmd, CS_Test_Setup, CS_Test_TearDown, "CS_AppPipe_Test_NoopCmd");
-    UtTest_Add(CS_AppPipe_Test_ResetCmd, CS_Test_Setup, CS_Test_TearDown, "CS_AppPipe_Test_ResetCmd");
+    UtTest_Add(CS_AppPipe_Test_ResetCountersCmd, CS_Test_Setup, CS_Test_TearDown, "CS_AppPipe_Test_ResetCountersCmd");
     UtTest_Add(CS_AppPipe_Test_OneShotCmd, CS_Test_Setup, CS_Test_TearDown, "CS_AppPipe_Test_OneShotCmd");
     UtTest_Add(CS_AppPipe_Test_CancelOneShotCmd, CS_Test_Setup, CS_Test_TearDown, "CS_AppPipe_Test_CancelOneShotCmd");
     UtTest_Add(CS_AppPipe_Test_EnableAllCSCmd, CS_Test_Setup, CS_Test_TearDown, "CS_AppPipe_Test_EnableAllCSCmd");
@@ -2756,7 +2756,10 @@ void UtTest_Setup(void)
                "CS_AppPipe_Test_BackgroundCheckCycleVerifyError");
 
     UtTest_Add(CS_ProcessCmd_NoopCmd_Test, CS_Test_Setup, CS_Test_TearDown, "CS_ProcessCmd_NoopCmd_Test");
-    UtTest_Add(CS_ProcessCmd_ResetCmd_Test, CS_Test_Setup, CS_Test_TearDown, "CS_ProcessCmd_ResetCmd_Test");
+    UtTest_Add(CS_ProcessCmd_ResetCountersCmd_Test,
+               CS_Test_Setup,
+               CS_Test_TearDown,
+               "CS_ProcessCmd_ResetCountersCmd_Test");
     UtTest_Add(CS_ProcessCmd_DisableAllCSCmd_Test,
                CS_Test_Setup,
                CS_Test_TearDown,
@@ -2896,10 +2899,10 @@ void UtTest_Setup(void)
                CS_Test_Setup,
                CS_Test_TearDown,
                "CS_ProcessCmd_NoopCmd_Test_VerifyError");
-    UtTest_Add(CS_ProcessCmd_ResetCmd_Test_VerifyError,
+    UtTest_Add(CS_ProcessCmd_ResetCountersCmd_Test_VerifyError,
                CS_Test_Setup,
                CS_Test_TearDown,
-               "CS_ProcessCmd_ResetCmd_Test_VerifyError");
+               "CS_ProcessCmd_ResetCountersCmd_Test_VerifyError");
     UtTest_Add(CS_ProcessCmd_DisableAllCSCmd_Test_VerifyError,
                CS_Test_Setup,
                CS_Test_TearDown,
