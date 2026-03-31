@@ -588,13 +588,13 @@ void CS_ExtractNames(const CS_Def_Tables_Table_Entry_t *DefEntry,
 
     TableNameLen -= AppNameLen;
 
-    if (AppNameLen > AppSz)
+    if (AppNameLen >= AppSz)
     {
-        AppNameLen = AppSz;
+        AppNameLen = AppSz - 1;
     }
-    if (TableNameLen > TableSz)
+    if (TableNameLen >= TableSz)
     {
-        TableNameLen = TableSz;
+        TableNameLen = TableSz - 1;
     }
 
     memcpy(AppBuf, DefEntry->Name, AppNameLen);
